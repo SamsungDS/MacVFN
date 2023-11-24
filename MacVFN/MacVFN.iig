@@ -1,0 +1,21 @@
+//
+//  MacVFN.iig
+//  MacVFN
+//
+//  Created by Mads Ynddal on 24/11/2023.
+//
+
+#ifndef MacVFN_h
+#define MacVFN_h
+
+#include <Availability.h>
+#include <DriverKit/IOService.iig>
+
+class MacVFN: public IOService
+{
+public:
+    virtual kern_return_t
+    Start(IOService * provider) override;
+};
+
+#endif /* MacVFN_h */

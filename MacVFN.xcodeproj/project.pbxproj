@@ -1,0 +1,384 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0922B0512B10CCC1009CC5FF /* DriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0502B10CCC1009CC5FF /* DriverKit.framework */; };
+		0922B0542B10CCC1009CC5FF /* MacVFN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0922B0532B10CCC1009CC5FF /* MacVFN.cpp */; };
+		0922B0562B10CCC1009CC5FF /* MacVFN.iig in Sources */ = {isa = PBXBuildFile; fileRef = 0922B0552B10CCC1009CC5FF /* MacVFN.iig */; };
+		0922B0692B10CE53009CC5FF /* PCIDriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */; };
+		0922B06A2B10CE53009CC5FF /* PCIDriverKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0922B06B2B10CE53009CC5FF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				0922B06A2B10CE53009CC5FF /* PCIDriverKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */ = {isa = PBXFileReference; explicitFileType = "wrapper.driver-extension"; includeInIndex = 0; path = com.openmpdk.MacVFN.dext; sourceTree = BUILT_PRODUCTS_DIR; };
+		0922B0502B10CCC1009CC5FF /* DriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DriverKit.framework; path = Library/Frameworks/DriverKit.framework; sourceTree = DEVELOPER_DIR; };
+		0922B0532B10CCC1009CC5FF /* MacVFN.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacVFN.cpp; sourceTree = "<group>"; };
+		0922B0552B10CCC1009CC5FF /* MacVFN.iig */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.iig; path = MacVFN.iig; sourceTree = "<group>"; };
+		0922B0572B10CCC1009CC5FF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0922B05E2B10CE46009CC5FF /* HIDDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = HIDDriverKit.framework; sourceTree = "<group>"; };
+		0922B05F2B10CE46009CC5FF /* SCSIPeripheralsDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SCSIPeripheralsDriverKit.framework; sourceTree = "<group>"; };
+		0922B0602B10CE46009CC5FF /* DriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = DriverKit.framework; sourceTree = "<group>"; };
+		0922B0612B10CE46009CC5FF /* BlockStorageDeviceDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = BlockStorageDeviceDriverKit.framework; sourceTree = "<group>"; };
+		0922B0622B10CE46009CC5FF /* SerialDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SerialDriverKit.framework; sourceTree = "<group>"; };
+		0922B0632B10CE46009CC5FF /* NetworkingDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NetworkingDriverKit.framework; sourceTree = "<group>"; };
+		0922B0642B10CE46009CC5FF /* AudioDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AudioDriverKit.framework; sourceTree = "<group>"; };
+		0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PCIDriverKit.framework; sourceTree = "<group>"; };
+		0922B0662B10CE46009CC5FF /* USBSerialDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = USBSerialDriverKit.framework; sourceTree = "<group>"; };
+		0922B0672B10CE46009CC5FF /* SCSIControllerDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SCSIControllerDriverKit.framework; sourceTree = "<group>"; };
+		0922B0682B10CE46009CC5FF /* USBDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = USBDriverKit.framework; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0922B04A2B10CCC1009CC5FF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0922B0692B10CE53009CC5FF /* PCIDriverKit.framework in Frameworks */,
+				0922B0512B10CCC1009CC5FF /* DriverKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0922B0432B10CCC1009CC5FF = {
+			isa = PBXGroup;
+			children = (
+				0922B0522B10CCC1009CC5FF /* MacVFN */,
+				0922B04F2B10CCC1009CC5FF /* Frameworks */,
+				0922B04E2B10CCC1009CC5FF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0922B04E2B10CCC1009CC5FF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0922B04F2B10CCC1009CC5FF /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0922B05D2B10CE46009CC5FF /* Frameworks */,
+				0922B0502B10CCC1009CC5FF /* DriverKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		0922B0522B10CCC1009CC5FF /* MacVFN */ = {
+			isa = PBXGroup;
+			children = (
+				0922B0532B10CCC1009CC5FF /* MacVFN.cpp */,
+				0922B0552B10CCC1009CC5FF /* MacVFN.iig */,
+				0922B0572B10CCC1009CC5FF /* Info.plist */,
+			);
+			path = MacVFN;
+			sourceTree = "<group>";
+		};
+		0922B05D2B10CE46009CC5FF /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0922B05E2B10CE46009CC5FF /* HIDDriverKit.framework */,
+				0922B05F2B10CE46009CC5FF /* SCSIPeripheralsDriverKit.framework */,
+				0922B0602B10CE46009CC5FF /* DriverKit.framework */,
+				0922B0612B10CE46009CC5FF /* BlockStorageDeviceDriverKit.framework */,
+				0922B0622B10CE46009CC5FF /* SerialDriverKit.framework */,
+				0922B0632B10CE46009CC5FF /* NetworkingDriverKit.framework */,
+				0922B0642B10CE46009CC5FF /* AudioDriverKit.framework */,
+				0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */,
+				0922B0662B10CE46009CC5FF /* USBSerialDriverKit.framework */,
+				0922B0672B10CE46009CC5FF /* SCSIControllerDriverKit.framework */,
+				0922B0682B10CE46009CC5FF /* USBDriverKit.framework */,
+			);
+			name = Frameworks;
+			path = Platforms/DriverKit.platform/Developer/SDKs/DriverKit.sdk/System/DriverKit/System/Library/Frameworks;
+			sourceTree = DEVELOPER_DIR;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		0922B0482B10CCC1009CC5FF /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		0922B04C2B10CCC1009CC5FF /* MacVFN */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0922B05A2B10CCC1009CC5FF /* Build configuration list for PBXNativeTarget "MacVFN" */;
+			buildPhases = (
+				0922B0482B10CCC1009CC5FF /* Headers */,
+				0922B0492B10CCC1009CC5FF /* Sources */,
+				0922B04A2B10CCC1009CC5FF /* Frameworks */,
+				0922B04B2B10CCC1009CC5FF /* Resources */,
+				0922B06B2B10CE53009CC5FF /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacVFN;
+			productName = MacVFN;
+			productReference = 0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */;
+			productType = "com.apple.product-type.driver-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0922B0442B10CCC1009CC5FF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					0922B04C2B10CCC1009CC5FF = {
+						CreatedOnToolsVersion = 15.0.1;
+					};
+				};
+			};
+			buildConfigurationList = 0922B0472B10CCC1009CC5FF /* Build configuration list for PBXProject "MacVFN" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0922B0432B10CCC1009CC5FF;
+			productRefGroup = 0922B04E2B10CCC1009CC5FF /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0922B04C2B10CCC1009CC5FF /* MacVFN */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0922B04B2B10CCC1009CC5FF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0922B0492B10CCC1009CC5FF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0922B0562B10CCC1009CC5FF /* MacVFN.iig in Sources */,
+				0922B0542B10CCC1009CC5FF /* MacVFN.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0922B0582B10CCC1009CC5FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DRIVERKIT_DEPLOYMENT_TARGET = 23.0;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = driverkit;
+			};
+			name = Debug;
+		};
+		0922B0592B10CCC1009CC5FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DRIVERKIT_DEPLOYMENT_TARGET = 23.0;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = driverkit;
+			};
+			name = Release;
+		};
+		0922B05B2B10CCC1009CC5FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MacVFN/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.openmpdk.MacVFN;
+				PRODUCT_NAME = "$(inherited)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				RUN_CLANG_STATIC_ANALYZER = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		0922B05C2B10CCC1009CC5FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MacVFN/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.openmpdk.MacVFN;
+				PRODUCT_NAME = "$(inherited)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				RUN_CLANG_STATIC_ANALYZER = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0922B0472B10CCC1009CC5FF /* Build configuration list for PBXProject "MacVFN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0922B0582B10CCC1009CC5FF /* Debug */,
+				0922B0592B10CCC1009CC5FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0922B05A2B10CCC1009CC5FF /* Build configuration list for PBXNativeTarget "MacVFN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0922B05B2B10CCC1009CC5FF /* Debug */,
+				0922B05C2B10CCC1009CC5FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0922B0442B10CCC1009CC5FF /* Project object */;
+}
