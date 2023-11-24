@@ -1,0 +1,4 @@
+[submodule "MacVFN/libvfn"]
+	path = MacVFN/libvfn
+	url = git@github.com:Baekalfen/libvfn.git
+    branch = driverkit
