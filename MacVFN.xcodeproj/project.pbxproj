@@ -20,7 +20,29 @@
 		0922B0562B10CCC1009CC5FF /* MacVFN.iig in Sources */ = {isa = PBXBuildFile; fileRef = 0922B0552B10CCC1009CC5FF /* MacVFN.iig */; };
 		0922B0692B10CE53009CC5FF /* PCIDriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */; };
 		0922B06A2B10CE53009CC5FF /* PCIDriverKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		09F93E532B10E115004694A2 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 09F93E522B10E115004694A2 /* AppDelegate.m */; };
+		09F93E552B10E116004694A2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09F93E542B10E116004694A2 /* Assets.xcassets */; };
+		09F93E582B10E116004694A2 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 09F93E562B10E116004694A2 /* MainMenu.xib */; };
+		09F93E5A2B10E116004694A2 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 09F93E592B10E116004694A2 /* main.m */; };
+		09F93E612B10E3E5004694A2 /* com.openmpdk.MacVFN.dext in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = 0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		09F93E5F2B10E11B004694A2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0922B0442B10CCC1009CC5FF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0922B04C2B10CCC1009CC5FF;
+			remoteInfo = MacVFN;
+		};
+		09F93E622B10E3E5004694A2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0922B0442B10CCC1009CC5FF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0922B04C2B10CCC1009CC5FF;
+			remoteInfo = MacVFN;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		0922B06B2B10CE53009CC5FF /* Embed Frameworks */ = {
@@ -32,6 +54,17 @@
 				0922B06A2B10CE53009CC5FF /* PCIDriverKit.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09F93E642B10E3E5004694A2 /* Embed System Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(SYSTEM_EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				09F93E612B10E3E5004694A2 /* com.openmpdk.MacVFN.dext in Embed System Extensions */,
+			);
+			name = "Embed System Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -61,6 +94,13 @@
 		0922B0662B10CE46009CC5FF /* USBSerialDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = USBSerialDriverKit.framework; sourceTree = "<group>"; };
 		0922B0672B10CE46009CC5FF /* SCSIControllerDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SCSIControllerDriverKit.framework; sourceTree = "<group>"; };
 		0922B0682B10CE46009CC5FF /* USBDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = USBDriverKit.framework; sourceTree = "<group>"; };
+		09F93E4F2B10E115004694A2 /* MacVFNInstaller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacVFNInstaller.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		09F93E512B10E115004694A2 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		09F93E522B10E115004694A2 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		09F93E542B10E116004694A2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		09F93E572B10E116004694A2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		09F93E592B10E116004694A2 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		09F93E5B2B10E116004694A2 /* MacVFNInstaller.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacVFNInstaller.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +110,13 @@
 			files = (
 				0922B0692B10CE53009CC5FF /* PCIDriverKit.framework in Frameworks */,
 				0922B0512B10CCC1009CC5FF /* DriverKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09F93E4C2B10E115004694A2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				0922B0522B10CCC1009CC5FF /* MacVFN */,
+				09F93E502B10E115004694A2 /* MacVFNInstaller */,
 				0922B04F2B10CCC1009CC5FF /* Frameworks */,
 				0922B04E2B10CCC1009CC5FF /* Products */,
 			);
@@ -152,6 +200,7 @@
 			isa = PBXGroup;
 			children = (
 				0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */,
+				09F93E4F2B10E115004694A2 /* MacVFNInstaller.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -195,6 +244,19 @@
 			path = Platforms/DriverKit.platform/Developer/SDKs/DriverKit.sdk/System/DriverKit/System/Library/Frameworks;
 			sourceTree = DEVELOPER_DIR;
 		};
+		09F93E502B10E115004694A2 /* MacVFNInstaller */ = {
+			isa = PBXGroup;
+			children = (
+				09F93E512B10E115004694A2 /* AppDelegate.h */,
+				09F93E522B10E115004694A2 /* AppDelegate.m */,
+				09F93E542B10E116004694A2 /* Assets.xcassets */,
+				09F93E562B10E116004694A2 /* MainMenu.xib */,
+				09F93E592B10E116004694A2 /* main.m */,
+				09F93E5B2B10E116004694A2 /* MacVFNInstaller.entitlements */,
+			);
+			path = MacVFNInstaller;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -228,6 +290,26 @@
 			productReference = 0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */;
 			productType = "com.apple.product-type.driver-extension";
 		};
+		09F93E4E2B10E115004694A2 /* MacVFNInstaller */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09F93E5E2B10E116004694A2 /* Build configuration list for PBXNativeTarget "MacVFNInstaller" */;
+			buildPhases = (
+				09F93E4B2B10E115004694A2 /* Sources */,
+				09F93E4C2B10E115004694A2 /* Frameworks */,
+				09F93E4D2B10E115004694A2 /* Resources */,
+				09F93E642B10E3E5004694A2 /* Embed System Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				09F93E602B10E11B004694A2 /* PBXTargetDependency */,
+				09F93E632B10E3E5004694A2 /* PBXTargetDependency */,
+			);
+			name = MacVFNInstaller;
+			productName = MacVFNInstaller;
+			productReference = 09F93E4F2B10E115004694A2 /* MacVFNInstaller.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -238,6 +320,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					0922B04C2B10CCC1009CC5FF = {
+						CreatedOnToolsVersion = 15.0.1;
+					};
+					09F93E4E2B10E115004694A2 = {
 						CreatedOnToolsVersion = 15.0.1;
 					};
 				};
@@ -256,6 +341,7 @@
 			projectRoot = "";
 			targets = (
 				0922B04C2B10CCC1009CC5FF /* MacVFN */,
+				09F93E4E2B10E115004694A2 /* MacVFNInstaller */,
 			);
 		};
 /* End PBXProject section */
@@ -265,6 +351,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09F93E4D2B10E115004694A2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				09F93E552B10E116004694A2 /* Assets.xcassets in Resources */,
+				09F93E582B10E116004694A2 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -287,7 +382,40 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		09F93E4B2B10E115004694A2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				09F93E5A2B10E116004694A2 /* main.m in Sources */,
+				09F93E532B10E115004694A2 /* AppDelegate.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		09F93E602B10E11B004694A2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0922B04C2B10CCC1009CC5FF /* MacVFN */;
+			targetProxy = 09F93E5F2B10E11B004694A2 /* PBXContainerItemProxy */;
+		};
+		09F93E632B10E3E5004694A2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0922B04C2B10CCC1009CC5FF /* MacVFN */;
+			targetProxy = 09F93E622B10E3E5004694A2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		09F93E562B10E116004694A2 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				09F93E572B10E116004694A2 /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		0922B0582B10CCC1009CC5FF /* Debug */ = {
@@ -461,6 +589,64 @@
 			};
 			name = Release;
 		};
+		09F93E5C2B10E116004694A2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacVFNInstaller/MacVFNInstaller.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainNibFile = MainMenu;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.openmpdk.MacVFNInstaller;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		09F93E5D2B10E116004694A2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacVFNInstaller/MacVFNInstaller.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainNibFile = MainMenu;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.openmpdk.MacVFNInstaller;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -478,6 +664,15 @@
 			buildConfigurations = (
 				0922B05B2B10CCC1009CC5FF /* Debug */,
 				0922B05C2B10CCC1009CC5FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09F93E5E2B10E116004694A2 /* Build configuration list for PBXNativeTarget "MacVFNInstaller" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09F93E5C2B10E116004694A2 /* Debug */,
+				09F93E5D2B10E116004694A2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

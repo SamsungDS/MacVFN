@@ -1,13 +1,19 @@
-.PHONY: build-driver log
+.PHONY: kill build-driver install log
 
 all: build
 
-BUILD_CONFIG := "Debug"
-# BUILD_CONFIG := "Release"
-APP := ${HOME}/Library/Developer/Xcode/DerivedData/MacVFN-*/Build/Products/${BUILD_CONFIG}/MacVFN.app
+# BUILD_CONFIG := Debug
+BUILD_CONFIG := Release
+_APP := $(shell xcodebuild -project MacVFN.xcodeproj -scheme MacVFNInstaller -configuration ${BUILD_CONFIG} -showBuildSettings | grep TARGET_BUILD_DIR | grep -oEi "\/.*")
+APP = ${_APP}/MacVFNInstaller.app
 LIBVFN := MacVFN/libvfn
 
-build: ${LIBVFN}/build/ccan/config.h ${LIBVFN}/src/nvme/crc64table.h build-driver
+kill:
+	@echo "Kill..."
+	sudo killall com.openmpdk.MacVFN;:
+	sudo killall lldb;:
+
+build: ${LIBVFN}/build/ccan/config.h ${LIBVFN}/src/nvme/crc64table.h build-driver sign-driver
 
 ${LIBVFN}/build/ccan/config.h:
 	rm -rf ${LIBVFN}/build
@@ -21,7 +27,16 @@ ${LIBVFN}/src/nvme/crc64table.h:
 
 build-driver:
 	@echo "Building..."
-	xcodebuild -scheme MacVFN build -configuration ${BUILD_CONFIG}
+	xcodebuild -scheme MacVFNInstaller build -configuration ${BUILD_CONFIG}
+
+sign-driver:
+	@echo "Signing..."
+	codesign -s - -f --entitlements "MacVFN/MacVFN.entitlements" "${APP}/Contents/Library/SystemExtensions/com.openmpdk.MacVFN.dext"
+	codesign -s - -f --entitlements "MacVFNInstaller/MacVFNInstaller.entitlements" "${APP}"
+
+install:
+	@echo "Installing..."
+	${APP}/Contents/MacOS/MacVFNInstaller
 
 log:
 	@echo "Logging..."
