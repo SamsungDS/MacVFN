@@ -6,20 +6,34 @@
 	<dict>
 		<key>MacVFN</key>
 		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>CFBundleIdentifierKernel</key>
 			<string>com.apple.kpi.iokit</string>
 			<key>IOClass</key>
 			<string>IOUserService</string>
-			<key>IOMatchCategory</key>
-			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>IOProviderClass</key>
-			<string>IOUserResources</string>
-			<key>IOResourceMatch</key>
-			<string>IOKit</string>
+			<string>IOPCIDevice</string>
 			<key>IOUserClass</key>
 			<string>MacVFN</string>
 			<key>IOUserServerName</key>
-			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<string>com.openmpdk.MacVFN</string>
+			<!-- <key>IOPCIPrimaryMatch</key> -->
+			<!-- <string>0x25228086 0xa80a144d 0xa824144d</string> -->
+			<!-- Matching NVMe I/O controller (0x01080200) and administrative controller (0x01080300) -->
+			<key>IOPCIClassMatch</key>
+			<string>0x01080200&amp;0xfffffe00</string>
+			<key>IOPCITunnelCompatible</key>
+			<true/>
+			<key>IOProbeScore</key>
+			<integer>65530</integer>
+			<key>UserClientProperties</key>
+			<dict>
+				<key>IOClass</key>
+				<string>IOUserUserClient</string>
+				<key>IOUserClass</key>
+				<string>MacVFNUserClient</string>
+			</dict>
 		</dict>
 	</dict>
 	<key>OSBundleUsageDescription</key>

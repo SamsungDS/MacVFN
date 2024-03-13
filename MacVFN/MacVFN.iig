@@ -9,13 +9,40 @@
 #define MacVFN_h
 
 #include <Availability.h>
+#include <DriverKit/IOLib.h>
+#include <DriverKit/DriverKit.iig>
+#include <DriverKit/OSAction.iig>
 #include <DriverKit/IOService.iig>
+#include <DriverKit/IOMemoryDescriptor.iig>
+#include <DriverKit/IOInterruptDispatchSource.iig>
+#include <DriverKit/IOService.iig>
+#include <PCIDriverKit/IOPCIDevice.iig>
+#include "MacVFNShared.h"
 
 class MacVFN: public IOService
 {
 public:
+    virtual bool init() override;
+    virtual void free() override;
     virtual kern_return_t
     Start(IOService * provider) override;
+    virtual kern_return_t
+    Stop(IOService * provider) override;
+    virtual kern_return_t
+    NewUserClient(uint32_t type, IOUserClient **userClient) override;
+
+    // Helpers for UserClient
+    uint32_t nvme_init() LOCALONLY;
+    uint32_t nvme_oneshot(NvmeSubmitCmd* cmd, IOBufferMemoryDescriptor* mem) LOCALONLY;
+    uint32_t nvme_create_ioqpair(NvmeQueue* queue) LOCALONLY;
+    uint32_t nvme_delete_ioqpair(NvmeQueue* queue) LOCALONLY;
+    int dma_map_buffer(IOMemoryDescriptor* mem, size_t len) LOCALONLY;
+    int dma_unmap_buffer(IOMemoryDescriptor* mem) LOCALONLY;
+    kern_return_t get_queue_buffer(uint32_t qid, uint32_t sq, IOMemoryDescriptor **memory) LOCALONLY;
+    kern_return_t poke(uint32_t sqid, uint32_t cqid, OSDictionary* buffers) LOCALONLY;
+    kern_return_t process_sq(uint32_t qid, OSDictionary* buffers) LOCALONLY;
+    kern_return_t process_cq(uint32_t qid, OSDictionary* buffers) LOCALONLY;
+    void stop_userclient() LOCALONLY;
 };
 
 #endif /* MacVFN_h */
