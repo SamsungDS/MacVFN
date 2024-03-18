@@ -56,7 +56,7 @@ void MacVFNUserClient::free(){
 kern_return_t
 IMPL(MacVFNUserClient, Start)
 {
-    log_debug("MacVFNUserClient: Hello World");
+    log_debug("MacVFNUserClient: Start");
     kern_return_t ret;
     ret = Start(provider, SUPERDISPATCH);
     if(ret != kIOReturnSuccess)
@@ -64,11 +64,10 @@ IMPL(MacVFNUserClient, Start)
         return kIOReturnNoDevice;
     }
 
-    log_debug("MacVFNUserClient: OSDynamicCast");
     ivars->macvfn = OSDynamicCast(MacVFN, provider);
     if(ivars->macvfn == NULL)
     {
-        log_debug("MacVFNUserClient: no macvfn cast");
+        log_debug("MacVFNUserClient: Failed to cast provider");
         Stop(provider);
         return kIOReturnNoDevice;
     }
@@ -82,7 +81,7 @@ IMPL(MacVFNUserClient, Stop) {
 
     log_info("Buffers still have %u entries", ivars->buffers->getCount());
     OSArray* to_free = OSArray::withCapacity(16);
-    ivars->buffers->iterateObjects(^bool (OSObject *key, OSObject *buffer){
+    ivars->buffers->iterateObjects(^bool (OSObject *key, OSObject *buf_desc){
         log_debug("Missing buffer release: %llx", (uint64_t) key);
         to_free->setObject(key);
         return 0;
@@ -90,18 +89,21 @@ IMPL(MacVFNUserClient, Stop) {
 
     OSNumber *key;
     while (key = (OSNumber *) to_free->getObject(0)){
-        IOMemoryDescriptor *buffer = (IOMemoryDescriptor*) ivars->buffers->getObject(key);
-        if (!buffer){
+        OSArray* buf_desc = (OSArray*) ivars->buffers->getObject(key);
+        if (!buf_desc){
             log_error("MacVFNUserClient Stop: Tried to dealloc buffer with token: %llx", (uint64_t)key);
             return kIOReturnError;
         }
+        IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
+        OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
 
-        log_debug("Attept dma_unmap_buffer. Buffer might not be mapped, but that's ok.");
-        ivars->macvfn->dma_unmap_buffer(buffer);
+        log_debug("Attempt dma_unmap_buffer. Buffer might not be mapped, but that's ok.");
+        ivars->macvfn->dma_unmap_buffer(buffer, (void*) _vaddr->unsigned64BitValue());
 
         ivars->buffers->removeObject(key);
         // buffer->release();
         key->release();
+        _vaddr->release();
         to_free->removeObject(0);
     }
     to_free->release();
@@ -246,27 +248,20 @@ kern_return_t MacVFNUserClient::HandleNvmeOneshot(void* reference, IOUserClientM
 
     log_debug("nvme_cmd->dbuf_token %llx", nvme_cmd->dbuf_token);
     OSNumber* key = (OSNumber*) nvme_cmd->dbuf_token;
-    IOBufferMemoryDescriptor* _mem = (IOBufferMemoryDescriptor*) ivars->buffers->getObject(key);
-    if (!_mem){
+    OSArray* buf_desc = (OSArray*) ivars->buffers->getObject(key);
+    if (!buf_desc){
         log_error("MacVFN::nvme_oneshot: Invalid dbuf_token!");
     }
+    IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
+    OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
 
-    IOBufferMemoryDescriptor* mem;
-    if (nvme_cmd->dbuf_offset){
-        log_debug("MacVFN::nvme_oneshot: CreateSubMemoryDescriptor");
-        kern_return_t ret = IOMemoryDescriptor::CreateSubMemoryDescriptor(kIOMemoryDirectionInOut, nvme_cmd->dbuf_offset, nvme_cmd->dbuf_nbytes, _mem, (IOMemoryDescriptor **) &mem);
-        if (ret != kIOReturnSuccess){
-            log_error("MacVFN::nvme_oneshot: CreateSubMemoryDescriptor failed");
-        }
-    }
-    else{
-        mem = _mem;
-    }
+    uint64_t vaddr = _vaddr->unsigned64BitValue();
+    vaddr += nvme_cmd->dbuf_offset;
 
-    log_debug("MacVFNUserClient HandleNvmeOneshot IOBufferMemoryDescriptor: %lx", (uintptr_t)mem);
-    uint64_t nvme_ret = ivars->macvfn->nvme_oneshot(nvme_cmd, mem);
-
+    log_debug("MacVFNUserClient HandleNvmeOneshot IOBufferMemoryDescriptor: %p, %llx", buffer, vaddr);
+    uint64_t nvme_ret = ivars->macvfn->nvme_oneshot(nvme_cmd, (void*) vaddr);
     log_debug("MacVFNUserClient HandleNvmeOneshot: %llu", nvme_ret);
+
     arguments->structureOutput = OSData::withBytes(nvme_cmd, sizeof(NvmeSubmitCmd));
     log_debug("MacVFNUserClient HandleNvmeOneshot Done");
     return ret;
@@ -349,19 +344,27 @@ kern_return_t MacVFNUserClient::HandleNvmeAllocBuffer(void* reference, IOUserCli
 
     IOMemoryMap* map;
     buffer->CreateMapping(0, 0, 0, 0, 0, &map);
-    size_t nbytes = ((uint64_t*) map->GetAddress())[0];
-    map->release();
+    uint64_t vaddr = map->GetAddress();
+    size_t nbytes = ((uint64_t*) vaddr)[0];
+    // NOTE: We keep the vaddr just for iommu lookups. We actually never read/write the buffer.
+    // map->release();
 
     OSNumber* key = OSNumber::withNumber((uint64_t)ivars->buffer_count, (size_t)64); // Meaningless object to feed to setObject and use as reference later
     // key->retain();
-    ivars->buffers->setObject(key, buffer);
+
+    OSArray* buf_desc = OSArray::withCapacity(2);
+	OSNumber* _vaddr = OSNumber::withNumber(vaddr, 64);
+	buf_desc->setObject(0, buffer);
+	buf_desc->setObject(1, _vaddr);
+    ivars->buffers->setObject(key, buf_desc);
+
     uint64_t token = (uint64_t) key;
     ivars->buffer_count += 1; // Meaningless counter
 
     log_debug("MacVFNUserClient HandleNvmeAllocBuffer token %llx", token);
     arguments->structureOutput = OSData::withBytes(&token, sizeof(token));
 
-    if (ivars->macvfn->dma_map_buffer(buffer, nbytes)) {
+    if (ivars->macvfn->dma_map_buffer(buffer, (void*) vaddr, nbytes)) {
         return kIOReturnError;
     }
 
@@ -391,14 +394,20 @@ kern_return_t MacVFNUserClient::HandleNvmeDeallocBuffer(void* reference, IOUserC
 
     log_debug("MacVFNUserClient HandleNvmeDeallocBuffer key: %llx", (uint64_t)key);
 
-    IOMemoryDescriptor *buffer = (IOMemoryDescriptor*) ivars->buffers->getObject(key);
+    OSArray* buf_desc = (OSArray*) ivars->buffers->getObject(key);
+    if (!buf_desc){
+        log_error("MacVFNUserClient HandleNvmeDeallocBuffer: Tried to dealloc buffer with token: %llx", (uint64_t)key);
+        return kIOReturnError;
+    }
+    IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
+    OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
     if (!buffer){
         log_error("MacVFNUserClient HandleNvmeDeallocBuffer: Tried to dealloc buffer with token: %llx", (uint64_t)key);
         return kIOReturnError;
     }
 
     log_debug("Attept dma_unmap_buffer. Buffer might not be mapped, but that's ok.");
-    if (ivars->macvfn->dma_unmap_buffer(buffer)) {
+    if (ivars->macvfn->dma_unmap_buffer(buffer, (void*) _vaddr->unsigned64BitValue())) {
         log_error("Internal error in dma_unmap_buffer");
         return kIOReturnError;
     }

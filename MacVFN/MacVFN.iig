@@ -33,16 +33,17 @@ public:
 
     // Helpers for UserClient
     uint32_t nvme_init() LOCALONLY;
-    uint32_t nvme_oneshot(NvmeSubmitCmd* cmd, IOBufferMemoryDescriptor* mem) LOCALONLY;
+    uint32_t nvme_oneshot(NvmeSubmitCmd* cmd, void* vaddr) LOCALONLY;
     uint32_t nvme_create_ioqpair(NvmeQueue* queue) LOCALONLY;
     uint32_t nvme_delete_ioqpair(NvmeQueue* queue) LOCALONLY;
-    int dma_map_buffer(IOMemoryDescriptor* mem, size_t len) LOCALONLY;
-    int dma_unmap_buffer(IOMemoryDescriptor* mem) LOCALONLY;
+    int dma_map_buffer(IOMemoryDescriptor* mem, void *vaddr, size_t len) LOCALONLY;
+    int dma_unmap_buffer(IOMemoryDescriptor* mem, void *vaddr) LOCALONLY;
     kern_return_t get_queue_buffer(uint32_t qid, uint32_t sq, IOMemoryDescriptor **memory) LOCALONLY;
     kern_return_t poke(uint32_t sqid, uint32_t cqid, OSDictionary* buffers) LOCALONLY;
     kern_return_t process_sq(uint32_t qid, OSDictionary* buffers) LOCALONLY;
     kern_return_t process_cq(uint32_t qid, OSDictionary* buffers) LOCALONLY;
     void stop_userclient() LOCALONLY;
+    void nvme_close_all() LOCALONLY;
 };
 
 #endif /* MacVFN_h */

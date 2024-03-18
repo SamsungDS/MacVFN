@@ -19,18 +19,21 @@
 #include "MacVFNShared.h"
 
 #include <vfn/nvme.h>
-#include <vfn/support/mem.h>
-#include <vfn/support/log.h>
-#include "libvfn/src/driverkit/iommu.h"
+#include "libvfn/src/iommu/context.h"
 
 #define MAX_QUEUE_COUNT 16
+
+struct MemoryDescriptorPair{
+    void *vaddr;
+    IOBufferMemoryDescriptor *vaddr_descriptor;
+};
 
 struct MacVFN_IVars
 {
     IOPCIDevice* pciDevice;
 
-    IOBufferMemoryDescriptor* sq_buffer_descriptors[MAX_QUEUE_COUNT];
-    IOBufferMemoryDescriptor* cq_buffer_descriptors[MAX_QUEUE_COUNT];
+    struct MemoryDescriptorPair sq_buffer_descriptors[MAX_QUEUE_COUNT];
+    struct MemoryDescriptorPair cq_buffer_descriptors[MAX_QUEUE_COUNT];
     RingQueue* cq_ring_queues[MAX_QUEUE_COUNT];
     RingQueue* sq_ring_queues[MAX_QUEUE_COUNT];
 
@@ -73,26 +76,26 @@ IMPL(MacVFN, Start)
     log_debug("MacVFN: Start");
     kern_return_t ret;
     ret = Start(provider, SUPERDISPATCH);
-    if(ret != kIOReturnSuccess) {
+    if (ret != kIOReturnSuccess) {
         return kIOReturnNoDevice;
     }
 
     ivars->pciDevice = OSDynamicCast(IOPCIDevice, provider);
-    if(ivars->pciDevice == NULL) {
+    if (ivars->pciDevice == NULL) {
         Stop(provider);
         return kIOReturnNoDevice;
     }
     ivars->pciDevice->retain();
 
     ret = ivars->pciDevice->Open(this, 0);
-    if(ret != kIOReturnSuccess) {
+    if (ret != kIOReturnSuccess) {
         Stop(provider);
         return kIOReturnNoDevice;
     }
 
     for (int qid = 0; qid < MAX_QUEUE_COUNT; qid++){
-        ivars->sq_buffer_descriptors[qid] = NULL;
-        ivars->cq_buffer_descriptors[qid] = NULL;
+        bzero((void*)&ivars->sq_buffer_descriptors[qid], sizeof(struct MemoryDescriptorPair));
+        bzero((void*)&ivars->cq_buffer_descriptors[qid], sizeof(struct MemoryDescriptorPair));
         ivars->sq_ring_queues[qid] = NULL;
         ivars->cq_ring_queues[qid] = NULL;
     }
@@ -101,14 +104,34 @@ IMPL(MacVFN, Start)
     ivars->ctrl.pci.dev = ivars->pciDevice;
     ivars->ctrl.pci.dev->retain();
     ivars->ctrl.pci.iommu_mappings = OSDictionary::withCapacity(16);
-
-    log_debug("RegisterService");
-    RegisterService();
+    ::iommu_ctx_init(__iommu_ctx(&ivars->ctrl));
 
     uint16_t commandRegister;
     ivars->pciDevice->ConfigurationRead16(kIOPCIConfigurationOffsetCommand, &commandRegister);
     commandRegister |= (kIOPCICommandBusMaster | kIOPCICommandMemorySpace);
     ivars->pciDevice->ConfigurationWrite16(kIOPCIConfigurationOffsetCommand, commandRegister);
+
+    int nvme_ret = MacVFN::nvme_init();
+    if (nvme_ret) {
+        return kIOReturnNoDevice;
+    }
+
+    IOServiceName service_name;
+    memcpy((void*)service_name, (void*)"MacVFN-", 8);
+    memcpy(service_name+7, ivars->ctrl.serial, 20);
+    for (int i=0; i < 128; i++){
+        if (service_name[i] == ' ') {
+            service_name[i] = '\0';
+            break;
+        }
+    }
+    service_name[127] = '\0';
+    SetName(service_name);
+
+    MacVFN::nvme_close_all();
+
+    log_debug("RegisterService");
+    RegisterService();
 
     log_debug("Driver started!");
     return ret;
@@ -179,28 +202,20 @@ static inline kern_return_t libvfn_to_kern_return(int ret){
     }
 }
 
-int MacVFN::dma_map_buffer(IOMemoryDescriptor* mem, size_t len){
+int MacVFN::dma_map_buffer(IOMemoryDescriptor* mem, void *vaddr, size_t len){
+    log_debug("MacVFN::dma_map_buffer %p %zx", mem, len);
     uint64_t iova;
-    log_debug("MacVFN::dma_map_buffer %p %zx %llx", mem, len, iova);
-    return ::vfio_map_vaddr(&ivars->ctrl.pci, mem, len, &iova);
+    return ::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl.pci), vaddr, len, &iova, IOMMU_MAP_FIXED_IOVA, (void*) mem);
 }
 
-int MacVFN::dma_unmap_buffer(IOMemoryDescriptor* mem){
+int MacVFN::dma_unmap_buffer(IOMemoryDescriptor* mem, void *vaddr){
     log_debug("MacVFN::dma_unmap_buffer %p", mem);
-    return ::vfio_unmap_vaddr(&ivars->ctrl.pci, (void*) mem, NULL);
+    return ::iommu_unmap_vaddr(__iommu_ctx(&ivars->ctrl.pci), vaddr, NULL);
 }
 
 uint32_t MacVFN::nvme_init()
 {
     kern_return_t ret;
-
-    uint8_t bus, dev, func;
-    ret = ivars->ctrl.pci.dev->GetBusDeviceFunction(&bus, &dev, &func);
-    if(ret != kIOReturnSuccess) {
-        log_debug("GetBusDeviceFunction failed");
-        return kIOReturnNoDevice;
-    }
-
     ret = ivars->ctrl.pci.dev->GetBARInfo(kPCIMemoryRangeBAR0, &ivars->ctrl.pci.bar_region_info[0].memory_index, &ivars->ctrl.pci.bar_region_info[0].size, &ivars->ctrl.pci.bar_region_info[0].type);
     if(ret != kIOReturnSuccess) {
         log_debug("bar0 failed");
@@ -212,7 +227,7 @@ uint32_t MacVFN::nvme_init()
     return libvfn_to_kern_return(nvme_ret);
 }
 
-uint32_t MacVFN::nvme_oneshot(NvmeSubmitCmd* cmd, IOBufferMemoryDescriptor* mem)
+uint32_t MacVFN::nvme_oneshot(NvmeSubmitCmd* cmd, void* vaddr)
 {
     kern_return_t ret;
 
@@ -224,11 +239,7 @@ uint32_t MacVFN::nvme_oneshot(NvmeSubmitCmd* cmd, IOBufferMemoryDescriptor* mem)
         sq = &ivars->ctrl.sq[cmd->queue_id];
     }
     log_debug("MacVFN::nvme_oneshot %llx, %llx, %llx", (uint64_t)sq, (uint64_t) cmd->cmd, (uint64_t) cmd->cpl);
-    int nvme_ret = ::nvme_oneshot(&ivars->ctrl, sq, &cmd->cmd, mem, cmd->dbuf_nbytes, (struct nvme_cqe *) &cmd->cpl);
-
-    if (cmd->dbuf_offset){
-        OSSafeReleaseNULL(mem);
-    }
+    int nvme_ret = ::nvme_sync(&ivars->ctrl, sq, (union nvme_cmd*)&cmd->cmd, vaddr, cmd->dbuf_nbytes, (struct nvme_cqe *) &cmd->cpl);
     return libvfn_to_kern_return(nvme_ret);
 }
 
@@ -247,26 +258,23 @@ uint32_t MacVFN::nvme_create_ioqpair(NvmeQueue* queue)
         return kIOReturnError;
     }
 
-    IOBufferMemoryDescriptor** sq_ring_desc = &ivars->sq_buffer_descriptors[queue->id];
-    IOBufferMemoryDescriptor** cq_ring_desc = &ivars->cq_buffer_descriptors[queue->id];
+    struct MemoryDescriptorPair *sq_ring_desc = &ivars->sq_buffer_descriptors[queue->id];
+    struct MemoryDescriptorPair *cq_ring_desc = &ivars->cq_buffer_descriptors[queue->id];
     RingQueue** sq_ring = &ivars->sq_ring_queues[queue->id];
     RingQueue** cq_ring = &ivars->cq_ring_queues[queue->id];
 
     size_t len;
-    len = ::pgmap((void**)sq_ring_desc, (queue->depth + 1)*sizeof(NvmeSubmitCmd) + sizeof(RingQueue));
+    len = ::__pgmap((void**)&sq_ring_desc->vaddr, (queue->depth + 1)*sizeof(NvmeSubmitCmd) + sizeof(RingQueue), (void**) &sq_ring_desc->vaddr_descriptor);
     assert(len > 0);
-    (*sq_ring_desc)->retain();
-    IOAddressSegment virtualAddressSegment;
-    (*sq_ring_desc)->GetAddressRange(&virtualAddressSegment);
-    (*sq_ring) = (RingQueue*)virtualAddressSegment.address;
+    sq_ring_desc->vaddr_descriptor->retain();
+    (*sq_ring) = (RingQueue*)sq_ring_desc->vaddr;
     (*sq_ring)->buffer_size = len;
     (*sq_ring)->depth = queue->depth;
 
-    len = ::pgmap((void**)cq_ring_desc, (queue->depth + 1)*sizeof(NvmeSubmitCmd) + sizeof(RingQueue));
+    len = ::__pgmap((void**)&cq_ring_desc->vaddr, (queue->depth + 1)*sizeof(NvmeSubmitCmd) + sizeof(RingQueue), (void**) &cq_ring_desc->vaddr_descriptor);
     assert(len > 0);
-    (*cq_ring_desc)->retain();
-    (*cq_ring_desc)->GetAddressRange(&virtualAddressSegment);
-    (*cq_ring) = (RingQueue*)virtualAddressSegment.address;
+    cq_ring_desc->vaddr_descriptor->retain();
+    (*cq_ring) = (RingQueue*)cq_ring_desc->vaddr;
     (*cq_ring)->buffer_size = len;
     (*cq_ring)->depth = queue->depth;
 
@@ -288,34 +296,37 @@ uint32_t MacVFN::nvme_delete_ioqpair(NvmeQueue* queue)
         return kIOReturnError;
     }
 
-    IOBufferMemoryDescriptor** sq_ring_desc = &ivars->sq_buffer_descriptors[queue->id];
-    IOBufferMemoryDescriptor** cq_ring_desc = &ivars->cq_buffer_descriptors[queue->id];
+    IOBufferMemoryDescriptor** sq_ring_desc = &ivars->sq_buffer_descriptors[queue->id].vaddr_descriptor;
+    IOBufferMemoryDescriptor** cq_ring_desc = &ivars->cq_buffer_descriptors[queue->id].vaddr_descriptor;
+    void** sq_ring_vaddr = &ivars->sq_buffer_descriptors[queue->id].vaddr;
+    void** cq_ring_vaddr = &ivars->cq_buffer_descriptors[queue->id].vaddr;
     RingQueue** sq_ring = &ivars->sq_ring_queues[queue->id];
     RingQueue** cq_ring = &ivars->cq_ring_queues[queue->id];
 
     (*sq_ring) = NULL;
-    pgunmap(*(void**)sq_ring_desc, 0);
+    __pgunmap(*sq_ring_vaddr, 0, *(void**)sq_ring_desc);
     *sq_ring_desc = NULL;
+    *sq_ring_vaddr = NULL;
 
     (*cq_ring) = NULL;
-    pgunmap(*(void**)cq_ring_desc, 0);
+    __pgunmap(*cq_ring_vaddr, 0, *(void**)sq_ring_desc);
     *cq_ring_desc = NULL;
+    *cq_ring_vaddr = NULL;
 
     return libvfn_to_kern_return(ret);
 }
 
 kern_return_t MacVFN::get_queue_buffer(uint32_t qid, uint32_t sq, IOMemoryDescriptor **memory) {
-    log_debug("get_queue_buffer %u, %u", qid, sq);
-
     IOBufferMemoryDescriptor* buffer;
     if (sq){
-        buffer = ivars->sq_buffer_descriptors[qid];
+        buffer = ivars->sq_buffer_descriptors[qid].vaddr_descriptor;
     }
     else {
-        buffer = ivars->cq_buffer_descriptors[qid];
+        buffer = ivars->cq_buffer_descriptors[qid].vaddr_descriptor;
     }
 
     if (!buffer){
+        log_error("Failed to locate buffer for qid: %x, %x", qid, sq);
         return kIOReturnInvalid;
     }
     *memory = buffer;
@@ -356,7 +367,7 @@ kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
     int reaped = 0;
     uint64_t head, tail;
     int entries_ready = queue_dequeue_ready(ring_sq, &head, &tail);
-    for (int i=head; i < head+entries_ready; i++){
+    for (uint64_t i=head; i < head+entries_ready; i++){
         uint64_t next = i % ring_sq->depth;
         queue_get_entry(ring_sq, next, &nvme_cmd);
 
@@ -368,11 +379,15 @@ kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
         uint64_t iova;
         if (nvme_cmd.dbuf_token) {
             key = (OSNumber*) nvme_cmd.dbuf_token;
-            mem = (IOBufferMemoryDescriptor*) buffers->getObject(key);
-            if (!mem){
+            OSArray* buf_desc = (OSArray*) buffers->getObject(key);
+            if (!buf_desc){
                 log_error("MacVFN::process_sq: Invalid dbuf_token!");
+                return kIOReturnError;
             }
-            if (::vfio_map_vaddr(&ivars->ctrl.pci, mem, nvme_cmd.dbuf_nbytes, &iova)) {
+            IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
+            OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
+            uint64_t vaddr = _vaddr->unsigned64BitValue();
+            if (::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl), (void*) vaddr, nvme_cmd.dbuf_nbytes, &iova, IOMMU_MAP_FIXED_IOVA, (void*) buffer)) {
                 log_error("FAILED: vfio_iommu_vaddr_to_iova()");
                 ::nvme_rq_release_atomic(rq);
                 return kIOReturnError;
@@ -382,17 +397,20 @@ kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
                 iova += nvme_cmd.dbuf_offset;
             }
 
-            ::nvme_rq_map_prp(rq, (union nvme_cmd *)&nvme_cmd.cmd, iova, nvme_cmd.dbuf_nbytes, ivars->ctrl.config.mps);
+            ::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd.cmd, iova, nvme_cmd.dbuf_nbytes);
         }
 
         if (nvme_cmd.mbuf_token) {
             key = (OSNumber*) nvme_cmd.mbuf_token;
-            mem = (IOBufferMemoryDescriptor*) buffers->getObject(key);
-            if (!mem){
+            OSArray* buf_desc = (OSArray*) buffers->getObject(key);
+            if (!buf_desc){
                 log_error("MacVFN::process_sq: Invalid mbuf_token!");
+                return kIOReturnError;
             }
-
-            if (!vfio_map_vaddr(&ivars->ctrl.pci, mem, nvme_cmd.mbuf_nbytes, &iova)) {
+            IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
+            OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
+            uint64_t vaddr = _vaddr->unsigned64BitValue();
+            if (::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl), (void*) vaddr, nvme_cmd.mbuf_nbytes, &iova, IOMMU_MAP_FIXED_IOVA, (void*) buffer)) {
                 log_error("FAILED: vfio_iommu_vaddr_to_iova()");
                 ::nvme_rq_release_atomic(rq);
                 return kIOReturnError;
@@ -475,14 +493,14 @@ kern_return_t MacVFN::process_cq(uint32_t qid, OSDictionary* buffers) {
     return kIOReturnSuccess;
 }
 
-void MacVFN::stop_userclient(){
+void MacVFN::nvme_close_all(){
     ::nvme_close(&ivars->ctrl);
 
     for (int qid = 0; qid < MAX_QUEUE_COUNT; qid++){
-        OSSafeReleaseNULL(ivars->sq_buffer_descriptors[qid]);
-        OSSafeReleaseNULL(ivars->cq_buffer_descriptors[qid]);
-        ivars->sq_buffer_descriptors[qid] = NULL;
-        ivars->cq_buffer_descriptors[qid] = NULL;
+        OSSafeReleaseNULL(ivars->sq_buffer_descriptors[qid].vaddr_descriptor);
+        OSSafeReleaseNULL(ivars->cq_buffer_descriptors[qid].vaddr_descriptor);
+        ivars->sq_buffer_descriptors[qid].vaddr = NULL;
+        ivars->cq_buffer_descriptors[qid].vaddr = NULL;
 
         // These are derived pointers and are released by the descriptors above
         ivars->sq_ring_queues[qid] = NULL;
@@ -491,19 +509,10 @@ void MacVFN::stop_userclient(){
 
     log_info("IOMMU Mapping still have %u entries", ivars->ctrl.pci.iommu_mappings->getCount());
 
-    OSArray* to_free = OSArray::withCapacity(16);
-    ivars->ctrl.pci.iommu_mappings->iterateObjects(^bool (OSObject *vaddr, OSObject *dma_iova){
-        log_debug("Missing IOMMU Mapping release: %llx", (uint64_t) vaddr);
-        to_free->setObject(vaddr);
-        return 0;
-    });
+    ::iommu_unmap_all(__iommu_ctx(&ivars->ctrl.pci));
+}
 
-    IOBufferMemoryDescriptor *vaddr;
-    while (vaddr = (IOBufferMemoryDescriptor *) to_free->getObject(0)){
-        ::iommu_remove_mapping(ivars->ctrl.pci.iommu_mappings, (IOBufferMemoryDescriptor *)vaddr);
-        to_free->removeObject(0);
-    }
-    to_free->release();
-
+void MacVFN::stop_userclient(){
+    nvme_close_all();
     ivars->user_clients -= 1;
 }
