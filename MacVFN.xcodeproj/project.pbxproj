@@ -14,14 +14,20 @@
 		090B2FC12B10D3420079CDF8 /* core.c in Sources */ = {isa = PBXBuildFile; fileRef = 090B2F952B10D3420079CDF8 /* core.c */; };
 		090B2FD12B10D3420079CDF8 /* mem.c in Sources */ = {isa = PBXBuildFile; fileRef = 090B2FAA2B10D3420079CDF8 /* mem.c */; };
 		090B2FDA2B10D3420079CDF8 /* pci.c in Sources */ = {isa = PBXBuildFile; fileRef = 090B2FB72B10D3420079CDF8 /* pci.c */; };
-		090B2FDB2B10D3420079CDF8 /* core.c in Sources */ = {isa = PBXBuildFile; fileRef = 090B2FB82B10D3420079CDF8 /* core.c */; };
 		0922B0512B10CCC1009CC5FF /* DriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0502B10CCC1009CC5FF /* DriverKit.framework */; };
 		0922B0542B10CCC1009CC5FF /* MacVFN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0922B0532B10CCC1009CC5FF /* MacVFN.cpp */; };
 		0922B0562B10CCC1009CC5FF /* MacVFN.iig in Sources */ = {isa = PBXBuildFile; fileRef = 0922B0552B10CCC1009CC5FF /* MacVFN.iig */; };
 		0922B0692B10CE53009CC5FF /* PCIDriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */; };
 		0922B06A2B10CE53009CC5FF /* PCIDriverKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0922B0652B10CE46009CC5FF /* PCIDriverKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0942632F2BC0106D0038C603 /* context.c in Sources */ = {isa = PBXBuildFile; fileRef = 0942632E2BC0106D0038C603 /* context.c */; };
 		095CB91C2B10F22900EA2A98 /* MacVFNUserClient.iig in Sources */ = {isa = PBXBuildFile; fileRef = 095CB91B2B10F22900EA2A98 /* MacVFNUserClient.iig */; };
 		095CB91E2B10F24500EA2A98 /* MacVFNUserClient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 095CB91D2B10F24500EA2A98 /* MacVFNUserClient.cpp */; };
+		099C79882BBFEA1A00CD1F29 /* skiplist.c in Sources */ = {isa = PBXBuildFile; fileRef = 099C79832BBFEA1A00CD1F29 /* skiplist.c */; };
+		099C798E2BBFF15000CD1F29 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 099C798B2BBFF15000CD1F29 /* util.c */; };
+		09DC13982BB196F900EBDE37 /* dma.c in Sources */ = {isa = PBXBuildFile; fileRef = 09DC13902BB196F900EBDE37 /* dma.c */; };
+		09DC13992BB196F900EBDE37 /* driverkit.c in Sources */ = {isa = PBXBuildFile; fileRef = 09DC13912BB196F900EBDE37 /* driverkit.c */; };
+		09DE90572BC7DB9D0035961E /* ticks.c in Sources */ = {isa = PBXBuildFile; fileRef = 09DE90562BC7DB9D0035961E /* ticks.c */; };
+		09DE905D2BC7DCE30035961E /* rdtsc.c in Sources */ = {isa = PBXBuildFile; fileRef = 09DE90592BC7DCE20035961E /* rdtsc.c */; };
 		09F93E532B10E115004694A2 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 09F93E522B10E115004694A2 /* AppDelegate.m */; };
 		09F93E552B10E116004694A2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09F93E542B10E116004694A2 /* Assets.xcassets */; };
 		09F93E582B10E116004694A2 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 09F93E562B10E116004694A2 /* MainMenu.xib */; };
@@ -79,7 +85,6 @@
 		090B2F952B10D3420079CDF8 /* core.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = core.c; sourceTree = "<group>"; };
 		090B2FAA2B10D3420079CDF8 /* mem.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = mem.c; sourceTree = "<group>"; };
 		090B2FB72B10D3420079CDF8 /* pci.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = pci.c; sourceTree = "<group>"; };
-		090B2FB82B10D3420079CDF8 /* core.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = core.c; sourceTree = "<group>"; };
 		0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */ = {isa = PBXFileReference; explicitFileType = "wrapper.driver-extension"; includeInIndex = 0; path = com.openmpdk.MacVFN.dext; sourceTree = BUILT_PRODUCTS_DIR; };
 		0922B0502B10CCC1009CC5FF /* DriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DriverKit.framework; path = Library/Frameworks/DriverKit.framework; sourceTree = DEVELOPER_DIR; };
 		0922B0532B10CCC1009CC5FF /* MacVFN.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacVFN.cpp; sourceTree = "<group>"; };
@@ -96,9 +101,16 @@
 		0922B0662B10CE46009CC5FF /* USBSerialDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = USBSerialDriverKit.framework; sourceTree = "<group>"; };
 		0922B0672B10CE46009CC5FF /* SCSIControllerDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SCSIControllerDriverKit.framework; sourceTree = "<group>"; };
 		0922B0682B10CE46009CC5FF /* USBDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = USBDriverKit.framework; sourceTree = "<group>"; };
+		0942632E2BC0106D0038C603 /* context.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = context.c; sourceTree = "<group>"; };
 		095CB91B2B10F22900EA2A98 /* MacVFNUserClient.iig */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.iig; path = MacVFNUserClient.iig; sourceTree = "<group>"; };
 		095CB91D2B10F24500EA2A98 /* MacVFNUserClient.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacVFNUserClient.cpp; sourceTree = "<group>"; };
 		095CB9202B10F2BB00EA2A98 /* MacVFNShared.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacVFNShared.h; sourceTree = "<group>"; };
+		099C79832BBFEA1A00CD1F29 /* skiplist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = skiplist.c; sourceTree = "<group>"; };
+		099C798B2BBFF15000CD1F29 /* util.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = util.c; sourceTree = "<group>"; };
+		09DC13902BB196F900EBDE37 /* dma.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = dma.c; sourceTree = "<group>"; };
+		09DC13912BB196F900EBDE37 /* driverkit.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = driverkit.c; sourceTree = "<group>"; };
+		09DE90562BC7DB9D0035961E /* ticks.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = ticks.c; sourceTree = "<group>"; };
+		09DE90592BC7DCE20035961E /* rdtsc.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = rdtsc.c; sourceTree = "<group>"; };
 		09F93E4F2B10E115004694A2 /* MacVFNInstaller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacVFNInstaller.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		09F93E512B10E115004694A2 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		09F93E522B10E115004694A2 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -139,6 +151,9 @@
 		090B2F8A2B10D3420079CDF8 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				099C798C2BBFF15000CD1F29 /* pci */,
+				099C79852BBFEA1A00CD1F29 /* util */,
+				09DC13952BB196F900EBDE37 /* iommu */,
 				090B2F8F2B10D3420079CDF8 /* nvme */,
 				090B2FA42B10D3420079CDF8 /* support */,
 				090B2FB52B10D3420079CDF8 /* driverkit */,
@@ -161,6 +176,8 @@
 		090B2FA42B10D3420079CDF8 /* support */ = {
 			isa = PBXGroup;
 			children = (
+				09DE905B2BC7DCE20035961E /* arch */,
+				09DE90562BC7DB9D0035961E /* ticks.c */,
 				090B2FA82B10D3420079CDF8 /* platform */,
 			);
 			path = support;
@@ -186,7 +203,6 @@
 			isa = PBXGroup;
 			children = (
 				090B2FB72B10D3420079CDF8 /* pci.c */,
-				090B2FB82B10D3420079CDF8 /* core.c */,
 			);
 			path = driverkit;
 			sourceTree = "<group>";
@@ -222,6 +238,7 @@
 		0922B0522B10CCC1009CC5FF /* MacVFN */ = {
 			isa = PBXGroup;
 			children = (
+				09323B9F2BC6DB2C0009693A /* ccan */,
 				090B2F892B10D32E0079CDF8 /* libvfn */,
 				0922B0532B10CCC1009CC5FF /* MacVFN.cpp */,
 				0922B0552B10CCC1009CC5FF /* MacVFN.iig */,
@@ -251,6 +268,64 @@
 			name = Frameworks;
 			path = Platforms/DriverKit.platform/Developer/SDKs/DriverKit.sdk/System/DriverKit/System/Library/Frameworks;
 			sourceTree = DEVELOPER_DIR;
+		};
+		09323B982BC6DB2C0009693A /* ccan */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ccan;
+			sourceTree = "<group>";
+		};
+		09323B9F2BC6DB2C0009693A /* ccan */ = {
+			isa = PBXGroup;
+			children = (
+				09323B982BC6DB2C0009693A /* ccan */,
+			);
+			name = ccan;
+			path = libvfn/ccan;
+			sourceTree = "<group>";
+		};
+		099C79852BBFEA1A00CD1F29 /* util */ = {
+			isa = PBXGroup;
+			children = (
+				099C79832BBFEA1A00CD1F29 /* skiplist.c */,
+			);
+			path = util;
+			sourceTree = "<group>";
+		};
+		099C798C2BBFF15000CD1F29 /* pci */ = {
+			isa = PBXGroup;
+			children = (
+				099C798B2BBFF15000CD1F29 /* util.c */,
+			);
+			path = pci;
+			sourceTree = "<group>";
+		};
+		09DC13952BB196F900EBDE37 /* iommu */ = {
+			isa = PBXGroup;
+			children = (
+				0942632E2BC0106D0038C603 /* context.c */,
+				09DC13902BB196F900EBDE37 /* dma.c */,
+				09DC13912BB196F900EBDE37 /* driverkit.c */,
+			);
+			path = iommu;
+			sourceTree = "<group>";
+		};
+		09DE905A2BC7DCE20035961E /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+				09DE90592BC7DCE20035961E /* rdtsc.c */,
+			);
+			path = x86_64;
+			sourceTree = "<group>";
+		};
+		09DE905B2BC7DCE20035961E /* arch */ = {
+			isa = PBXGroup;
+			children = (
+				09DE905A2BC7DCE20035961E /* x86_64 */,
+			);
+			path = arch;
+			sourceTree = "<group>";
 		};
 		09F93E502B10E115004694A2 /* MacVFNInstaller */ = {
 			isa = PBXGroup;
@@ -378,17 +453,23 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09DC13982BB196F900EBDE37 /* dma.c in Sources */,
 				095CB91C2B10F22900EA2A98 /* MacVFNUserClient.iig in Sources */,
 				090B2FDA2B10D3420079CDF8 /* pci.c in Sources */,
+				09DC13992BB196F900EBDE37 /* driverkit.c in Sources */,
 				090B2FD12B10D3420079CDF8 /* mem.c in Sources */,
 				090B2FC12B10D3420079CDF8 /* core.c in Sources */,
+				09DE90572BC7DB9D0035961E /* ticks.c in Sources */,
+				0942632F2BC0106D0038C603 /* context.c in Sources */,
+				09DE905D2BC7DCE30035961E /* rdtsc.c in Sources */,
 				090B2FBC2B10D3420079CDF8 /* util.c in Sources */,
-				090B2FDB2B10D3420079CDF8 /* core.c in Sources */,
 				090B2FBF2B10D3420079CDF8 /* rq.c in Sources */,
 				090B2FBE2B10D3420079CDF8 /* queue.c in Sources */,
 				095CB91E2B10F24500EA2A98 /* MacVFNUserClient.cpp in Sources */,
 				0922B0562B10CCC1009CC5FF /* MacVFN.iig in Sources */,
 				0922B0542B10CCC1009CC5FF /* MacVFN.cpp in Sources */,
+				099C798E2BBFF15000CD1F29 /* util.c in Sources */,
+				099C79882BBFEA1A00CD1F29 /* skiplist.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -553,6 +634,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MacVFN/Info.plist;
+				"LD_MAP_FILE_PATH[arch=*]" = "$(TARGET_TEMP_DIR)/$(PRODUCT_NAME)-LinkMap-$(CURRENT_VARIANT)-$(CURRENT_ARCH).txt";
 				MARKETING_VERSION = 1.0;
 				OTHER_CFLAGS = (
 					"-I",
@@ -561,6 +643,8 @@
 					"\"${SRCROOT}/MacVFN/libvfn/ccan/\"",
 					"-I",
 					"\"${SRCROOT}/MacVFN/libvfn/build/ccan/\"",
+					"-I",
+					"\"${SRCROOT}/MacVFN/libvfn/src/\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.openmpdk.MacVFN;
 				PRODUCT_NAME = "$(inherited)";
@@ -589,6 +673,8 @@
 					"\"${SRCROOT}/MacVFN/libvfn/ccan/\"",
 					"-I",
 					"\"${SRCROOT}/MacVFN/libvfn/build/ccan/\"",
+					"-I",
+					"\"${SRCROOT}/MacVFN/libvfn/src/\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.openmpdk.MacVFN;
 				PRODUCT_NAME = "$(inherited)";

@@ -24,13 +24,13 @@ These are the basic steps to build and install the driver:
 3. Clone xNVMe with the `driverkit` branch: `git clone -b driverkit https://github.com/baekalfen/xnvme`
 4. Run `make config build install`
 5. Check your NVMe device enumerates `./builddir/tools/xnvme enum`
-6. Then take the 'uri' and run a command: `./builddir/tools/xnvme idfy 1 --cns 0 --be=driverkit`
-7. Or two `./builddir/examples/xnvme_single_sync 1`
-8. Or three `./builddir/examples/xnvme_single_async 1`
+6. Then take the 'uri' and run a command: `./builddir/tools/xnvme idfy MacVFN-1234ABCD --cns 0 --be=driverkit`
+7. Or two `./builddir/examples/xnvme_single_sync MacVFN-1234ABCD`
+8. Or three `./builddir/examples/xnvme_single_async MacVFN-1234ABCD`
 
 Optionally, you can clone and build [fio](https://github.com/axboe/fio) with xNVMe support:
 
 1. Git clone fio: `git clone https://github.com/axboe/fio`
 2. Install GNU-make: `brew install make`
 3. Use `gmake` to build it: `gmake -j`
-4. Run a test: `./fio --name=test1 --iodepth=64 --rw=write --bs=512 --size=1GB --loops=1 --numjobs=1 --direct=1 --ioengine=xnvme --filename=1 --thread=1 --xnvme_dev_nsid=1 --xnvme_be=driverkit --xnvme_sync=driverkit  --xnvme_async=driverkit --verify=crc32`
+4. Run a test: `./fio --name=test1 --iodepth=64 --rw=write --bs=512 --size=1GB --loops=1 --numjobs=1 --direct=1 --ioengine=xnvme --filename=MacVFN-1234ABCD --thread=1 --xnvme_dev_nsid=1 --xnvme_be=driverkit --xnvme_sync=driverkit  --xnvme_async=driverkit --verify=crc32`
