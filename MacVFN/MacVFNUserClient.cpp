@@ -241,22 +241,29 @@ kern_return_t MacVFNUserClient::StaticHandleNvmeOneshot(OSObject* target, void* 
 
 kern_return_t MacVFNUserClient::HandleNvmeOneshot(void* reference, IOUserClientMethodArguments* arguments)
 {
+    uint64_t vaddr;
+    IOMemoryDescriptor *buffer;
     kern_return_t ret = kIOReturnSuccess;
 
     log_debug("MacVFNUserClient HandleNvmeOneshot");
     NvmeSubmitCmd* nvme_cmd = (NvmeSubmitCmd*)arguments->structureInput->getBytesNoCopy();
 
     log_debug("nvme_cmd->dbuf_token %llx", nvme_cmd->dbuf_token);
-    OSNumber* key = (OSNumber*) nvme_cmd->dbuf_token;
-    OSArray* buf_desc = (OSArray*) ivars->buffers->getObject(key);
-    if (!buf_desc){
-        log_error("MacVFN::nvme_oneshot: Invalid dbuf_token!");
+    if (nvme_cmd->dbuf_token) {
+        OSNumber* key = (OSNumber*) nvme_cmd->dbuf_token;
+        OSArray* buf_desc = (OSArray*) ivars->buffers->getObject(key);
+        if (!buf_desc){
+            log_error("MacVFN::nvme_oneshot: Invalid dbuf_token!");
+        }
+        buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
+        OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
+        vaddr = _vaddr->unsigned64BitValue();
+        vaddr += nvme_cmd->dbuf_offset;
     }
-    IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
-    OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
+    else{
+        vaddr = 0;
+    }
 
-    uint64_t vaddr = _vaddr->unsigned64BitValue();
-    vaddr += nvme_cmd->dbuf_offset;
 
     log_debug("MacVFNUserClient HandleNvmeOneshot IOBufferMemoryDescriptor: %p, %llx", buffer, vaddr);
     uint64_t nvme_ret = ivars->macvfn->nvme_oneshot(nvme_cmd, (void*) vaddr);
