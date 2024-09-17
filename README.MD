@@ -19,14 +19,15 @@ Although it's a port of libvfn, there is no way of running any of the example co
 These are the basic steps to build and install the driver:
 
 0. [Disable SIP](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection?language=objc)
-1. Git clone this repo with submodules: `git clone --recurse-submodules https://github.com/openmpdk/MacVFN.git`
-2. Run `make build install kill log`, approve system extension and type sudo-password as needed
-3. Clone xNVMe with the `driverkit` branch: `git clone -b driverkit https://github.com/baekalfen/xnvme`
-4. Run `make config build install`
-5. Check your NVMe device enumerates `./builddir/tools/xnvme enum`
-6. Then take the 'uri' and run a command: `./builddir/tools/xnvme idfy MacVFN-1234ABCD --cns 0 --be=driverkit`
-7. Or two `./builddir/examples/xnvme_single_sync MacVFN-1234ABCD`
-8. Or three `./builddir/examples/xnvme_single_async MacVFN-1234ABCD`
+1. Run `systemextensionsctl developer on` to [allow System Extensions from any directory](https://developer.apple.com/documentation/driverkit/debugging_and_testing_system_extensions)
+2. Git clone this repo with submodules: `git clone --recurse-submodules https://github.com/openmpdk/MacVFN.git`
+3. Run `make build install kill log`, approve system extension and type sudo-password as needed
+4. Clone xNVMe with the `driverkit` branch: `git clone -b driverkit https://github.com/baekalfen/xnvme`
+5. Run `make config build install`
+6. Check your NVMe device enumerates `./builddir/tools/xnvme enum`
+7. Then take the 'uri' and run a command: `./builddir/tools/xnvme idfy MacVFN-1234ABCD --cns 0 --be=driverkit`
+8. Or two `./builddir/examples/xnvme_single_sync MacVFN-1234ABCD`
+9. Or three `./builddir/examples/xnvme_single_async MacVFN-1234ABCD`
 
 Optionally, you can clone and build [fio](https://github.com/axboe/fio) with xNVMe support:
 
