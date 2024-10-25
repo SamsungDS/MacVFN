@@ -17,6 +17,7 @@
 #include "MacVFN.h"
 #include "MacVFNUserClient.h"
 #include "MacVFNShared.h"
+#include "MacVFNBuffers.h"
 
 #include <vfn/nvme.h>
 #include "libvfn/src/iommu/context.h"
@@ -229,8 +230,6 @@ uint32_t MacVFN::nvme_init()
 
 uint32_t MacVFN::nvme_oneshot(NvmeSubmitCmd* cmd, void* vaddr)
 {
-    kern_return_t ret;
-
     struct nvme_sq *sq;
     if (cmd->queue_id == 0){
         sq = ivars->ctrl.adminq.sq;
@@ -334,13 +333,13 @@ kern_return_t MacVFN::get_queue_buffer(uint32_t qid, uint32_t sq, IOMemoryDescri
 }
 
 
-kern_return_t MacVFN::poke(uint32_t sqid, uint32_t cqid, OSDictionary* buffers) {
+kern_return_t MacVFN::poke(uint32_t sqid, uint32_t cqid, struct buffer* buffers) {
     kern_return_t ret;
     ret = process_sq(sqid, buffers);
     if (ret != kIOReturnSuccess){
         return ret;
     }
-    ret = process_cq(cqid, buffers);
+    ret = process_cq(cqid);
     if (ret != kIOReturnSuccess){
         return ret;
     }
@@ -348,7 +347,7 @@ kern_return_t MacVFN::poke(uint32_t sqid, uint32_t cqid, OSDictionary* buffers) 
     return kIOReturnSuccess;
 }
 
-kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
+kern_return_t MacVFN::process_sq(uint32_t qid, struct buffer* buffers) {
     RingQueue* ring_sq = ivars->sq_ring_queues[qid];
 
     NvmeSubmitCmd nvme_cmd;
@@ -378,16 +377,13 @@ kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
 
         uint64_t iova;
         if (nvme_cmd.dbuf_token) {
-            key = (OSNumber*) nvme_cmd.dbuf_token;
-            OSArray* buf_desc = (OSArray*) buffers->getObject(key);
-            if (!buf_desc){
+            struct buffer* buf = buffer_find(buffers, nvme_cmd.dbuf_token);
+            if (!buf){
                 log_error("MacVFN::process_sq: Invalid dbuf_token!");
                 return kIOReturnError;
             }
-            IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
-            OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
-            uint64_t vaddr = _vaddr->unsigned64BitValue();
-            if (::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl), (void*) vaddr, nvme_cmd.dbuf_nbytes, &iova, IOMMU_MAP_FIXED_IOVA, (void*) buffer)) {
+
+            if (::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl), (void*) buf->vaddr, nvme_cmd.dbuf_nbytes, &iova, IOMMU_MAP_FIXED_IOVA, (void*) buf->buf_desc)) {
                 log_error("FAILED: vfio_iommu_vaddr_to_iova()");
                 ::nvme_rq_release_atomic(rq);
                 return kIOReturnError;
@@ -401,16 +397,13 @@ kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
         }
 
         if (nvme_cmd.mbuf_token) {
-            key = (OSNumber*) nvme_cmd.mbuf_token;
-            OSArray* buf_desc = (OSArray*) buffers->getObject(key);
-            if (!buf_desc){
+            struct buffer* buf = buffer_find(buffers, nvme_cmd.mbuf_token);
+            if (!buf){
                 log_error("MacVFN::process_sq: Invalid mbuf_token!");
                 return kIOReturnError;
             }
-            IOMemoryDescriptor *buffer = (IOMemoryDescriptor *) buf_desc->getObject(0);
-            OSNumber *_vaddr = (OSNumber *) buf_desc->getObject(1);
-            uint64_t vaddr = _vaddr->unsigned64BitValue();
-            if (::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl), (void*) vaddr, nvme_cmd.mbuf_nbytes, &iova, IOMMU_MAP_FIXED_IOVA, (void*) buffer)) {
+
+            if (::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl), (void*) buf->vaddr, nvme_cmd.mbuf_nbytes, &iova, IOMMU_MAP_FIXED_IOVA, (void*) buf->buf_desc)) {
                 log_error("FAILED: vfio_iommu_vaddr_to_iova()");
                 ::nvme_rq_release_atomic(rq);
                 return kIOReturnError;
@@ -440,7 +433,7 @@ kern_return_t MacVFN::process_sq(uint32_t qid, OSDictionary* buffers) {
     return kIOReturnSuccess;
 }
 
-kern_return_t MacVFN::process_cq(uint32_t qid, OSDictionary* buffers) {
+kern_return_t MacVFN::process_cq(uint32_t qid) {
     struct nvme_cq *cq;
     struct nvme_sq *sq;
 
