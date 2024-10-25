@@ -64,7 +64,7 @@ static inline void queue_put_entry(RingQueue *queue, uint64_t index, NvmeSubmitC
 #define QUEUE_EMPTY -2
 #define QUEUE_ERROR -3
 
-static int queue_enqueue(RingQueue *queue, NvmeSubmitCmd* cmd){
+static inline int queue_enqueue(RingQueue *queue, NvmeSubmitCmd* cmd){
     uint64_t tail = __c11_atomic_load(&queue->tail, __ATOMIC_ACQUIRE);
 	uint64_t head = __c11_atomic_load(&queue->head, __ATOMIC_RELAXED);
 
@@ -83,7 +83,7 @@ static int queue_enqueue(RingQueue *queue, NvmeSubmitCmd* cmd){
     return 0;
 }
 
-static int queue_dequeue(RingQueue *queue, NvmeSubmitCmd* cmd){
+static inline int queue_dequeue(RingQueue *queue, NvmeSubmitCmd* cmd){
 	uint64_t head = __c11_atomic_load(&queue->head, __ATOMIC_ACQUIRE);
     uint64_t tail = __c11_atomic_load(&queue->tail, __ATOMIC_RELAXED);
 
@@ -102,25 +102,25 @@ static int queue_dequeue(RingQueue *queue, NvmeSubmitCmd* cmd){
     return 0;
 }
 
-static bool queue_full(RingQueue *queue){
+static inline bool queue_full(RingQueue *queue){
     uint64_t head = __c11_atomic_load(&queue->head, __ATOMIC_RELAXED);
     uint64_t tail = __c11_atomic_load(&queue->tail, __ATOMIC_RELAXED);
     return (tail + 1) % queue->depth == head;
 }
 
-static int queue_peek(RingQueue *queue){
+static inline int queue_peek(RingQueue *queue){
     uint64_t head = __c11_atomic_load(&queue->head, __ATOMIC_RELAXED);
     uint64_t tail = __c11_atomic_load(&queue->tail, __ATOMIC_RELAXED);
     return ((int64_t)head - (int64_t)tail + (int64_t)queue->depth) % (int64_t)queue->depth;
 }
 
-static int queue_dequeue_ready(RingQueue *queue, uint64_t *head, uint64_t *tail){
+static inline int queue_dequeue_ready(RingQueue *queue, uint64_t *head, uint64_t *tail){
     *head = __c11_atomic_load(&queue->head, __ATOMIC_RELAXED);
     *tail = __c11_atomic_load(&queue->tail, __ATOMIC_RELAXED);
     return ((int64_t)*tail - (int64_t)*head + (int64_t)queue->depth) % (int64_t)queue->depth;
 }
 
-static int queue_enqueue_ready(RingQueue *queue, uint64_t *head, uint64_t *tail){
+static inline int queue_enqueue_ready(RingQueue *queue, uint64_t *head, uint64_t *tail){
     *head = __c11_atomic_load(&queue->head, __ATOMIC_RELAXED);
     *tail = __c11_atomic_load(&queue->tail, __ATOMIC_RELAXED);
     return ((int64_t)*head - (int64_t)*tail + (int64_t)queue->depth) % (int64_t)queue->depth;
