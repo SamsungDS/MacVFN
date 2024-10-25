@@ -169,6 +169,11 @@ IMPL(MacVFN, NewUserClient)
     IOService* client = nullptr;
     kern_return_t ret = kIOReturnSuccess;
 
+    if (type != MACVFN_CLIENT_VERSION){
+        log_error("NewUserClient client version mismatch! Theirs: %08x Ours: %08x", type, MACVFN_CLIENT_VERSION);
+        return kIOReturnError;
+    }
+
     if (ivars->user_clients){
         log_error("UserClient already created. Multiple userclients are not supported at this moment.");
         return kIOReturnError;

@@ -8,6 +8,8 @@
 #ifndef MacVFNShared_h
 #define MacVFNShared_h
 
+#define MACVFN_CLIENT_VERSION 0x00010000
+
 typedef enum
 {
     NVME_INIT = 0,
