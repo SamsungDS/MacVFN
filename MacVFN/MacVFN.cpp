@@ -22,7 +22,7 @@
 #include <vfn/nvme.h>
 #include "libvfn/src/iommu/context.h"
 
-#define MAX_QUEUE_COUNT 16
+#define MAX_QUEUE_COUNT 64
 
 struct MemoryDescriptorPair{
     void *vaddr;
@@ -251,8 +251,8 @@ uint32_t MacVFN::nvme_create_ioqpair(NvmeQueue* queue)
 {
     log_debug("nvme_create_ioqpair id: %llu vector: %llu", queue->id, queue->vector);
 
-    if (queue->id > MAX_QUEUE_COUNT){
-        log_debug("nvme_create_ioqpair queue id larger than fixed max: %llu/%d", queue->id, MAX_QUEUE_COUNT);
+    if (queue->id >= MAX_QUEUE_COUNT){
+        log_debug("nvme_create_ioqpair queue id larger than fixed max: %llu (zero-indexed) of max count %d", queue->id, MAX_QUEUE_COUNT);
         return kIOReturnBadArgument;
     }
 
