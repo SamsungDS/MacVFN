@@ -1,0 +1,50 @@
+//
+//  MacVFNUserBlockStorageDevice.iig
+//  MacVFN
+//
+//  Created by David Westerhoff on 2/6/25.
+//
+
+#ifndef MacVFNUserBlockStorageDevice_h
+#define MacVFNUserBlockStorageDevice_h
+
+#include <Availability.h>
+#include <DriverKit/IOLib.h>
+#include <DriverKit/IOUserClient.iig>
+#include <PCIDriverKit/IOPCIDevice.iig>
+#include <BlockStorageDeviceDriverKit/IOUserBlockStorageDevice.iig>
+
+class MacVFNUserBlockStorageDevice: public IOUserBlockStorageDevice
+{
+public:
+    virtual bool init() override;
+    virtual void free() override;
+    virtual kern_return_t Start(IOService * provider) override;
+    virtual kern_return_t Stop(IOService * provider) override;
+    virtual kern_return_t DoAsyncEjectMedia(uint32_t requestID) override;
+    virtual kern_return_t DoAsyncSynchronize(uint32_t requestID, uint64_t lba, uint64_t numOfBlocks) override;
+    virtual kern_return_t DoAsyncUnmap(uint32_t requestID, IOMemoryDescriptor *buffer, uint32_t numOfRanges) LOCAL override;
+    virtual kern_return_t DoAsyncReadWrite (bool isRead,
+                                            uint32_t requestID,
+                                            uint64_t dmaAddr,
+                                            uint64_t size,
+                                            uint64_t lba,
+                                            uint64_t numOfBlocks,
+                                            IOUserStorageOptions options) override;
+    virtual kern_return_t GetDeviceParams (struct DeviceParams *deviceParams) override;
+    virtual kern_return_t GetVendorString (struct DeviceString *vendor) override;
+    virtual kern_return_t GetProductString (struct DeviceString *product) override;
+    virtual kern_return_t GetRevisionString (struct DeviceString *revision) override;
+    virtual kern_return_t GetAdditionalInfoString (struct DeviceString *additionalInfo) override;
+    virtual kern_return_t ReportEjectability ( bool *isEjectable ) override;
+    virtual kern_return_t ReportRemovability ( bool *isRemovable ) override;
+    virtual kern_return_t ReportWriteProtection ( bool *isWriteProtected ) override;
+    virtual void CompleteIO (uint32_t requestID, uint64_t bytesTransferred, kern_return_t IOStatus) QUEUENAME (Completion) override;
+    virtual void Complete (uint32_t requestID, kern_return_t status) QUEUENAME (Completion) override;
+    virtual kern_return_t RegisterDext() override;
+private:
+    kern_return_t DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ranges, uint32_t numOfRanges) override;
+};
+
+
+#endif /* MacVFNUserBlockStorageDevice_h */

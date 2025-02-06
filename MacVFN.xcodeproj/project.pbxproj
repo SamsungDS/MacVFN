@@ -33,6 +33,9 @@
 		09F93E582B10E116004694A2 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 09F93E562B10E116004694A2 /* MainMenu.xib */; };
 		09F93E5A2B10E116004694A2 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 09F93E592B10E116004694A2 /* main.m */; };
 		09F93E612B10E3E5004694A2 /* com.openmpdk.MacVFN.dext in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = 0922B04D2B10CCC1009CC5FF /* com.openmpdk.MacVFN.dext */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		93FE3B862D553BB900C7EF93 /* MacVFNUserBlockStorageDevice.iig in Sources */ = {isa = PBXBuildFile; fileRef = 93FE3B852D553BB900C7EF93 /* MacVFNUserBlockStorageDevice.iig */; };
+		93FE3B8A2D553BCB00C7EF93 /* MacVFNUserBlockStorageDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 93FE3B882D553BCB00C7EF93 /* MacVFNUserBlockStorageDevice.cpp */; };
+		93FE3B8C2D553E6F00C7EF93 /* BlockStorageDeviceDriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 93FE3B8B2D553E6F00C7EF93 /* BlockStorageDeviceDriverKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -118,6 +121,10 @@
 		09F93E572B10E116004694A2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		09F93E592B10E116004694A2 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		09F93E5B2B10E116004694A2 /* MacVFNInstaller.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacVFNInstaller.entitlements; sourceTree = "<group>"; };
+		93FE3B842D553B8000C7EF93 /* MacVFN.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacVFN.entitlements; sourceTree = "<group>"; };
+		93FE3B852D553BB900C7EF93 /* MacVFNUserBlockStorageDevice.iig */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.iig; path = MacVFNUserBlockStorageDevice.iig; sourceTree = "<group>"; };
+		93FE3B882D553BCB00C7EF93 /* MacVFNUserBlockStorageDevice.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacVFNUserBlockStorageDevice.cpp; sourceTree = "<group>"; };
+		93FE3B8B2D553E6F00C7EF93 /* BlockStorageDeviceDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BlockStorageDeviceDriverKit.framework; path = System/DriverKit/System/Library/Frameworks/BlockStorageDeviceDriverKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +132,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				93FE3B8C2D553E6F00C7EF93 /* BlockStorageDeviceDriverKit.framework in Frameworks */,
 				0922B0692B10CE53009CC5FF /* PCIDriverKit.framework in Frameworks */,
 				0922B0512B10CCC1009CC5FF /* DriverKit.framework in Frameworks */,
 			);
@@ -229,6 +237,7 @@
 		0922B04F2B10CCC1009CC5FF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				93FE3B8B2D553E6F00C7EF93 /* BlockStorageDeviceDriverKit.framework */,
 				0922B05D2B10CE46009CC5FF /* Frameworks */,
 				0922B0502B10CCC1009CC5FF /* DriverKit.framework */,
 			);
@@ -246,6 +255,9 @@
 				0922B0572B10CCC1009CC5FF /* Info.plist */,
 				095CB91B2B10F22900EA2A98 /* MacVFNUserClient.iig */,
 				095CB91D2B10F24500EA2A98 /* MacVFNUserClient.cpp */,
+				93FE3B852D553BB900C7EF93 /* MacVFNUserBlockStorageDevice.iig */,
+				93FE3B882D553BCB00C7EF93 /* MacVFNUserBlockStorageDevice.cpp */,
+				93FE3B842D553B8000C7EF93 /* MacVFN.entitlements */,
 			);
 			path = MacVFN;
 			sourceTree = "<group>";
@@ -457,6 +469,7 @@
 				095CB91C2B10F22900EA2A98 /* MacVFNUserClient.iig in Sources */,
 				090B2FDA2B10D3420079CDF8 /* pci.c in Sources */,
 				09DC13992BB196F900EBDE37 /* driverkit.c in Sources */,
+				93FE3B8A2D553BCB00C7EF93 /* MacVFNUserBlockStorageDevice.cpp in Sources */,
 				090B2FD12B10D3420079CDF8 /* mem.c in Sources */,
 				090B2FC12B10D3420079CDF8 /* core.c in Sources */,
 				09DE90572BC7DB9D0035961E /* ticks.c in Sources */,
@@ -469,6 +482,7 @@
 				0922B0562B10CCC1009CC5FF /* MacVFN.iig in Sources */,
 				0922B0542B10CCC1009CC5FF /* MacVFN.cpp in Sources */,
 				099C798E2BBFF15000CD1F29 /* util.c in Sources */,
+				93FE3B862D553BB900C7EF93 /* MacVFNUserBlockStorageDevice.iig in Sources */,
 				099C79882BBFEA1A00CD1F29 /* skiplist.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -632,6 +646,10 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/DriverKit/System/Library/Frameworks",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MacVFN/Info.plist;
 				"LD_MAP_FILE_PATH[arch=*]" = "$(TARGET_TEMP_DIR)/$(PRODUCT_NAME)-LinkMap-$(CURRENT_VARIANT)-$(CURRENT_ARCH).txt";
@@ -663,6 +681,10 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/DriverKit/System/Library/Frameworks",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MacVFN/Info.plist;
 				MARKETING_VERSION = 1.0;
