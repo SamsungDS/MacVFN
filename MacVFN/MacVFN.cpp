@@ -514,3 +514,113 @@ void MacVFN::stop_userclient(){
     nvme_close_all();
     ivars->user_clients -= 1;
 }
+
+
+kern_return_t // (uint32_t requestID)
+IMPL(MacVFN, DoAsyncEjectMedia) {
+    log_debug("IMPL(MacVFN, DoAsyncEjectMedia)");
+    return KERN_SUCCESS;
+}
+
+
+kern_return_t // (uint32_t requestID, uint64_t lba, uint64_t numOfBlocks)
+IMPL(MacVFN, DoAsyncSynchronize) {
+    log_debug("IMPL(MacVFN, DoAsyncSynchronize)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (uint32_t requestID, IOMemoryDescriptor *buffer, uint32_t numOfRanges)
+IMPL(MacVFN, DoAsyncUnmap) {
+    log_debug("IMPL(MacVFN, DoAsyncUnmap)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (bool isRead,
+//uint32_t requestID,
+//uint64_t dmaAddr,
+//uint64_t size,
+//uint64_t lba,
+//uint64_t numOfBlocks,
+//IOUserStorageOptions options)
+IMPL(MacVFN, DoAsyncReadWrite) {
+    log_debug("IMPL(MacVFN, DoAsyncReadWrite) %x %x %llx %llx %llx %llx", isRead, requestID, dmaAddr, size, lba, numOfBlocks);
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (struct DeviceParams *deviceParams)
+IMPL(MacVFN, GetDeviceParams) {
+    log_debug("IMPL(MacVFN, GetDeviceParams)");
+    // WARNING: These are random parameters just to try to get the driver started!
+    deviceParams->numOfBlocks = 10;
+    deviceParams->blockSize = 512;
+    deviceParams->maxIOSize = 512;
+    deviceParams->numOfOutstandingIOs = 1;
+    deviceParams->maxNumOfUnmapRegions = 1;
+	deviceParams->minSegmentAlignment = 512;
+	deviceParams->numOfAddressBits = 48;
+    deviceParams->isUnmapSupported = 0;
+	deviceParams->isFUASupported = 0;
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (struct DeviceString *vendor)
+IMPL(MacVFN, GetVendorString) {
+    log_debug("IMPL(MacVFN, GetVendorString)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (struct DeviceString *product)
+IMPL(MacVFN, GetProductString) {
+    log_debug("IMPL(MacVFN, GetProductString)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (struct DeviceString *revision)
+IMPL(MacVFN, GetRevisionString) {
+    log_debug("IMPL(MacVFN, GetRevisionString)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // (struct DeviceString *additionalInfo)
+IMPL(MacVFN, GetAdditionalInfoString) {
+    log_debug("IMPL(MacVFN, GetAdditionalInfoString)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // ( bool *isEjectable )
+IMPL(MacVFN, ReportEjectability) {
+    log_debug("IMPL(MacVFN, ReportEjectability)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // ( bool *isRemovable )
+IMPL(MacVFN, ReportRemovability) {
+    log_debug("IMPL(MacVFN, ReportRemovability)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t // ( bool *isWriteProtected )
+IMPL(MacVFN, ReportWriteProtection) {
+    log_debug("IMPL(MacVFN, ReportWriteProtection)");
+    return KERN_SUCCESS;
+}
+
+void // (uint32_t requestID, uint64_t bytesTransferred, kern_return_t IOStatus)
+IMPL(MacVFN, CompleteIO) {
+    log_debug("IMPL(MacVFN, CompleteIO)");
+}
+
+void // (uint32_t requestID, kern_return_t status)
+IMPL(MacVFN, Complete) {
+    log_debug("IMPL(MacVFN, Complete)");
+}
+
+kern_return_t
+IMPL(MacVFN, RegisterDext) {
+    log_debug("IMPL(MacVFN, RegisterDext)");
+    return KERN_SUCCESS;
+}
+
+kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ranges, uint32_t numOfRanges) {
+    return kIOReturnSuccess;
+}

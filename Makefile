@@ -2,8 +2,8 @@
 
 all: build
 
-# BUILD_CONFIG := Debug
-BUILD_CONFIG := Release
+BUILD_CONFIG := Debug
+# BUILD_CONFIG := Release
 _APP := $(shell xcodebuild -project MacVFN.xcodeproj -scheme MacVFNInstaller -configuration ${BUILD_CONFIG} -showBuildSettings | grep TARGET_BUILD_DIR | grep -oEi "\/.*")
 APP = ${_APP}/MacVFNInstaller.app
 LIBVFN := MacVFN/libvfn

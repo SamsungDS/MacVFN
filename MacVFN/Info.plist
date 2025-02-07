@@ -9,9 +9,9 @@
 			<key>CFBundleIdentifier</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>CFBundleIdentifierKernel</key>
-			<string>com.apple.kpi.iokit</string>
+			<string>com.apple.iokit.IOStorageFamily</string>
 			<key>IOClass</key>
-			<string>IOUserService</string>
+			<string>IOUserBlockStorageDevice</string>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<key>IOUserClass</key>
