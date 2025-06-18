@@ -33,11 +33,35 @@ typedef struct {
     uint64_t dbuf_nbytes;
     uint64_t dbuf_offset;
     uint64_t dbuf_token;
+    uint64_t dbuf_iova;
 
     uint64_t mbuf_nbytes;
     uint64_t mbuf_offset;
     uint64_t mbuf_token;
 } NvmeSubmitCmd;
+
+typedef struct {
+	// cdw 00
+	uint8_t opcode;
+	uint8_t _reserved;
+	uint16_t cid; // Command identifier
+
+	// cdw 01
+	uint32_t nsid; // Namespace identifier
+
+    // cdw 02-09
+	uint32_t _reserved_02_09[8];
+
+    // cdw 10-11
+	uint64_t slba;
+
+    // cdw 12
+	uint16_t _reserved_12;
+	uint16_t nlb;
+
+    // cdw 13-15
+	uint32_t _reserved_13_15[3];
+} NVMeSpecIOCommand;
 
 typedef struct {
     uint64_t id;
