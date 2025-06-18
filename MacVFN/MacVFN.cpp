@@ -38,6 +38,8 @@ struct MacVFN_IVars
     RingQueue* cq_ring_queues[MAX_QUEUE_COUNT];
     RingQueue* sq_ring_queues[MAX_QUEUE_COUNT];
 
+    NvmeQueue* block_storage_queue;
+
     int user_clients;
 
     struct nvme_ctrl ctrl;
@@ -129,10 +131,31 @@ IMPL(MacVFN, Start)
     service_name[127] = '\0';
     SetName(service_name);
 
-    MacVFN::nvme_close_all();
+
+
+    NvmeQueue* new_queue = IONewZero(NvmeQueue, 1);
+    new_queue->id = 8; // use the last queue for block storage. Then we don't need to remap, but just cap the queue max
+    new_queue->depth = 64; // TODO: dynamic
+    new_queue->vector = 0;
+    ivars->block_storage_queue = new_queue;
+    ret = MacVFN::nvme_create_ioqpair(ivars->block_storage_queue);
+    // MacVFN::nvme_close_all();
 
     log_debug("RegisterService");
     RegisterService();
+    // RegisterDext();
+
+
+    //OSDictionary *dictionary = OSDynamicCast(OSDictionary, getProvider()->getProperty(kIOPropertyDeviceCharacteristicsKey));
+    // if (dictionary) {
+    //     OSString *string = OSDynamicCast(OSString, dictionary->getObject(kIOPropertyMediumTypeKey));
+
+    //     if (string) {
+    //         if (string->isEqualTo(kIOPropertyMediumTypeSolidStateKey)) {
+    //             _solidState = true;
+    //         }
+    //     }
+    // }
 
     log_debug("Driver started!");
     return ret;
@@ -400,6 +423,9 @@ kern_return_t MacVFN::process_sq(uint32_t qid, struct buffer* buffers) {
 
             ::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd.cmd, iova, nvme_cmd.dbuf_nbytes);
         }
+        else if (nvme_cmd.dbuf_iova) {
+            assert(::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd.cmd, nvme_cmd.dbuf_iova, nvme_cmd.dbuf_nbytes) == 0);
+        }
 
         if (nvme_cmd.mbuf_token) {
             struct buffer* buf = buffer_find(buffers, nvme_cmd.mbuf_token);
@@ -426,9 +452,11 @@ kern_return_t MacVFN::process_sq(uint32_t qid, struct buffer* buffers) {
         reaped += 1;
     }
 
+    log_info("reaped == entries_ready, %u == %u", reaped, entries_ready);
     assert(reaped == entries_ready);
 
     if (reaped){
+        log_info("exchange");
         mb();
         uint64_t old_head = __c11_atomic_exchange(&ring_sq->head, (head+reaped) % ring_sq->depth, __ATOMIC_RELAXED);
         assert(old_head == head);
@@ -439,6 +467,7 @@ kern_return_t MacVFN::process_sq(uint32_t qid, struct buffer* buffers) {
 }
 
 kern_return_t MacVFN::process_cq(uint32_t qid) {
+    log_debug("process_cq: %x", qid);
     struct nvme_cq *cq;
     struct nvme_sq *sq;
 
@@ -455,7 +484,9 @@ kern_return_t MacVFN::process_cq(uint32_t qid) {
     int reaped = 0;
     NvmeSubmitCmd nvme_cmd;
     while (true) {
+        log_debug("process_cq: while");
         if (queue_full(ring_cq)){
+            log_debug("process_cq: queue full");
             // Queue full
             break;
         }
@@ -463,20 +494,25 @@ kern_return_t MacVFN::process_cq(uint32_t qid) {
         struct nvme_rq *rq;
         struct nvme_cqe *cqe;
 
+        log_debug("process_cq: get cqe");
         cqe = ::nvme_cq_get_cqe(cq);
         if (!cqe) {
+            log_debug("process_cq: no cqe");
             break;
         }
 
         reaped++;
 
+        log_debug("process_cq: get rq from cqe");
         rq = ::__nvme_rq_from_cqe(sq, cqe);
         assert(rq->cid == cqe->cid);
         assert(rq->opaque);
         nvme_cmd.backend_opaque = (uint64_t)rq->opaque;
+        log_debug("process_cq: opaque %llx", nvme_cmd.backend_opaque);
 
         memcpy(&nvme_cmd.cpl, cqe, sizeof(nvme_cmd.cpl));
         assert(nvme_cmd.backend_opaque);
+        log_debug("process_cq: ring_cq queue_enqueue");
         assert(queue_enqueue(ring_cq, &nvme_cmd) == 0);
         mb();
         nvme_rq_release_atomic(rq);
@@ -518,21 +554,24 @@ void MacVFN::stop_userclient(){
 
 kern_return_t // (uint32_t requestID)
 IMPL(MacVFN, DoAsyncEjectMedia) {
-    log_debug("IMPL(MacVFN, DoAsyncEjectMedia)");
-    return KERN_SUCCESS;
+    log_debug("IMPL(MacVFN, DoAsyncEjectMedia) requestID: %x", requestID);
+    MacVFN::Complete(requestID, kIOReturnSuccess);
+    return kIOReturnSuccess;
 }
 
 
 kern_return_t // (uint32_t requestID, uint64_t lba, uint64_t numOfBlocks)
 IMPL(MacVFN, DoAsyncSynchronize) {
-    log_debug("IMPL(MacVFN, DoAsyncSynchronize)");
-    return KERN_SUCCESS;
+    log_debug("IMPL(MacVFN, DoAsyncSynchronize) requestID: %x lba: %llx numOfBlocks: %llx", requestID, lba, numOfBlocks);
+    MacVFN::Complete(requestID, kIOReturnSuccess);
+    return kIOReturnSuccess;
 }
 
 kern_return_t // (uint32_t requestID, IOMemoryDescriptor *buffer, uint32_t numOfRanges)
 IMPL(MacVFN, DoAsyncUnmap) {
-    log_debug("IMPL(MacVFN, DoAsyncUnmap)");
-    return KERN_SUCCESS;
+    log_debug("IMPL(MacVFN, DoAsyncUnmap) numOfBlocks: %x", numOfRanges);
+    MacVFN::Complete(requestID, kIOReturnSuccess);
+    return kIOReturnSuccess;
 }
 
 kern_return_t // (bool isRead,
@@ -543,82 +582,217 @@ kern_return_t // (bool isRead,
 //uint64_t numOfBlocks,
 //IOUserStorageOptions options)
 IMPL(MacVFN, DoAsyncReadWrite) {
-    log_debug("IMPL(MacVFN, DoAsyncReadWrite) %x %x %llx %llx %llx %llx", isRead, requestID, dmaAddr, size, lba, numOfBlocks);
-    return KERN_SUCCESS;
+    log_debug("IMPL(MacVFN, DoAsyncReadWrite) isRead: %x requestID: %x dmaAddr: %llx size: %llx lba: %llx numOfBlocks: %llx", isRead, requestID, dmaAddr, size, lba, numOfBlocks);
+    assert(options == kIOUserStorageOptionNone);
+    assert(numOfBlocks < 1<<16);
+
+    NVMeSpecIOCommand payload = {
+        .opcode = isRead ? (uint8_t)0x02 : (uint8_t)0x01,
+        .cid = 0, // Gets overriden through poke->process_sq->...->nvme_rq_prep_cmd
+        .nsid = 1,
+        .slba = lba,
+        .nlb = (uint16_t) numOfBlocks
+    };
+
+    NvmeSubmitCmd cmd = {
+        .queue_id = ivars->block_storage_queue->id,
+        .backend_opaque = requestID,
+        .dbuf_nbytes = size,
+        .dbuf_offset = 0,
+        .dbuf_token = 0,
+        .dbuf_iova = dmaAddr,
+        .mbuf_nbytes = 0,
+        .mbuf_offset = 0,
+        .mbuf_token = 0
+    };
+    static_assert(sizeof(cmd.cmd) == sizeof(payload), "NVMe command size mismatch");
+    memcpy(&cmd.cmd, &payload, sizeof(payload));
+    queue_enqueue(ivars->sq_ring_queues[ivars->block_storage_queue->id], &cmd);
+
+    MacVFN::block_send_sq(ivars->block_storage_queue->id, &cmd);
+    while (MacVFN::block_recv_cq(ivars->block_storage_queue->id) == 0) {
+
+    }
+    // MacVFN::poke(ivars->block_storage_queue->id, ivars->block_storage_queue->id, NULL);
+
+    // struct nvme_cq *cq;
+    // while (cpu_to_le32(ivars->ctrl.cq[8].head) == 0) {
+    //     log_debug("cpu_to_le32(ivars->ctrl.cq[8].head) %x", cpu_to_le32(ivars->ctrl.cq[8].head));
+    //     MacVFN::poke(ivars->block_storage_queue->id, ivars->block_storage_queue->id, NULL);
+    // }
+
+    // MacVFN::CompleteIO(cmd.backend_opaque, size, kIOReturnSuccess);
+
+    return kIOReturnSuccess;
 }
+
+
+kern_return_t MacVFN::block_send_sq(uint32_t qid, NvmeSubmitCmd* nvme_cmd) {
+    struct nvme_sq *sq;
+    if (qid == 0){
+        sq = ivars->ctrl.adminq.sq;
+    }
+    else{
+        sq = &ivars->ctrl.sq[qid];
+    }
+
+    struct nvme_rq *rq = ::nvme_rq_acquire_atomic(sq);
+    rq->opaque = (void*) nvme_cmd->backend_opaque;
+    mb();
+
+    assert(nvme_cmd->dbuf_iova);
+    assert(::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd->cmd, nvme_cmd->dbuf_iova, nvme_cmd->dbuf_nbytes) == 0);
+
+    ::nvme_rq_exec(rq, (union nvme_cmd *)&nvme_cmd->cmd);
+    log_info("block_send_sq: opaque %x, %x, %llx", qid, rq->cid, (uint64_t) rq->opaque);
+
+    return kIOReturnSuccess;
+}
+
+int MacVFN::block_recv_cq(uint32_t qid) {
+    log_debug("block_recv_cq: %x", qid);
+    struct nvme_cq *cq;
+    struct nvme_sq *sq;
+
+    if (qid == 0){
+        cq = ivars->ctrl.adminq.cq;
+        sq = ivars->ctrl.adminq.sq;
+    }
+    else{
+        cq = &ivars->ctrl.cq[qid];
+        sq = &ivars->ctrl.sq[qid];
+    }
+
+    // RingQueue* ring_cq = ivars->cq_ring_queues[qid];
+    int reaped = 0;
+    NvmeSubmitCmd nvme_cmd;
+    while (true) {
+        struct nvme_rq *rq;
+        struct nvme_cqe *cqe;
+
+        log_debug("block_recv_cq: get cqe");
+        cqe = ::nvme_cq_get_cqe(cq);
+        if (!cqe) {
+            log_debug("block_recv_cq: no cqe");
+            break;
+        }
+
+        reaped++;
+
+        log_debug("block_recv_cq: get rq from cqe");
+        rq = ::__nvme_rq_from_cqe(sq, cqe);
+        assert(rq->cid == cqe->cid);
+        // assert(rq->opaque);
+        nvme_cmd.backend_opaque = (uint64_t)rq->opaque;
+        log_debug("block_recv_cq: opaque %llx", nvme_cmd.backend_opaque);
+
+        memcpy(&nvme_cmd.cpl, cqe, sizeof(nvme_cmd.cpl));
+        mb();
+        nvme_rq_release_atomic(rq);
+
+        // TODO: Read cpl for success
+        // TODO: SIZE!
+        MacVFN::CompleteIO(nvme_cmd.backend_opaque, 0x200, kIOReturnSuccess);
+    }
+
+    mb();
+    if (reaped) {
+        log_debug("block_recv_cq: Updating %d", reaped);
+        nvme_cq_update_head(cq);
+    }
+
+    return reaped;
+}
+
+
+
 
 kern_return_t // (struct DeviceParams *deviceParams)
 IMPL(MacVFN, GetDeviceParams) {
     log_debug("IMPL(MacVFN, GetDeviceParams)");
     // WARNING: These are random parameters just to try to get the driver started!
-    deviceParams->numOfBlocks = 10;
+    deviceParams->numOfBlocks = 2097152;
     deviceParams->blockSize = 512;
     deviceParams->maxIOSize = 512;
     deviceParams->numOfOutstandingIOs = 1;
     deviceParams->maxNumOfUnmapRegions = 1;
 	deviceParams->minSegmentAlignment = 512;
 	deviceParams->numOfAddressBits = 48;
-    deviceParams->isUnmapSupported = 0;
-	deviceParams->isFUASupported = 0;
-    return KERN_SUCCESS;
+    deviceParams->isUnmapSupported = 1;
+	deviceParams->isFUASupported = 0; // forced unit access
+    return kIOReturnSuccess;
 }
 
 kern_return_t // (struct DeviceString *vendor)
 IMPL(MacVFN, GetVendorString) {
     log_debug("IMPL(MacVFN, GetVendorString)");
-    return KERN_SUCCESS;
+    strncpy((char*)vendor, "CustomVendor", kMaxDeviceStringLength - 1);
+    ((char*)vendor)[kMaxDeviceStringLength - 1] = '\0';
+    return kIOReturnSuccess;
 }
 
 kern_return_t // (struct DeviceString *product)
 IMPL(MacVFN, GetProductString) {
     log_debug("IMPL(MacVFN, GetProductString)");
-    return KERN_SUCCESS;
+    strncpy((char*)product, "CustomProduct", kMaxDeviceStringLength - 1);
+    ((char*)product)[kMaxDeviceStringLength - 1] = '\0';
+    return kIOReturnSuccess;
 }
 
 kern_return_t // (struct DeviceString *revision)
 IMPL(MacVFN, GetRevisionString) {
     log_debug("IMPL(MacVFN, GetRevisionString)");
-    return KERN_SUCCESS;
+    strncpy((char*)revision, "CustomRevision", kMaxDeviceStringLength - 1);
+    ((char*)revision)[kMaxDeviceStringLength - 1] = '\0';
+    return kIOReturnSuccess;
 }
 
 kern_return_t // (struct DeviceString *additionalInfo)
 IMPL(MacVFN, GetAdditionalInfoString) {
     log_debug("IMPL(MacVFN, GetAdditionalInfoString)");
-    return KERN_SUCCESS;
+    strncpy((char*)additionalInfo, "CustomAdditionalInfo", kMaxDeviceStringLength - 1);
+    ((char*)additionalInfo)[kMaxDeviceStringLength - 1] = '\0';
+    return kIOReturnSuccess;
 }
 
 kern_return_t // ( bool *isEjectable )
 IMPL(MacVFN, ReportEjectability) {
     log_debug("IMPL(MacVFN, ReportEjectability)");
-    return KERN_SUCCESS;
+    *isEjectable = true;
+    return kIOReturnSuccess;
 }
 
 kern_return_t // ( bool *isRemovable )
 IMPL(MacVFN, ReportRemovability) {
     log_debug("IMPL(MacVFN, ReportRemovability)");
-    return KERN_SUCCESS;
+    *isRemovable = true;
+    return kIOReturnSuccess;
 }
 
 kern_return_t // ( bool *isWriteProtected )
 IMPL(MacVFN, ReportWriteProtection) {
     log_debug("IMPL(MacVFN, ReportWriteProtection)");
-    return KERN_SUCCESS;
+    *isWriteProtected = false;
+    return kIOReturnSuccess;
 }
 
 void // (uint32_t requestID, uint64_t bytesTransferred, kern_return_t IOStatus)
 IMPL(MacVFN, CompleteIO) {
     log_debug("IMPL(MacVFN, CompleteIO)");
+    // log_debug("CompleteIO");
+    CompleteIO(requestID, bytesTransferred, IOStatus, SUPERDISPATCH);
 }
 
 void // (uint32_t requestID, kern_return_t status)
 IMPL(MacVFN, Complete) {
     log_debug("IMPL(MacVFN, Complete)");
+    Complete(requestID, status, SUPERDISPATCH);
 }
 
 kern_return_t
 IMPL(MacVFN, RegisterDext) {
     log_debug("IMPL(MacVFN, RegisterDext)");
-    return KERN_SUCCESS;
+    return kIOReturnSuccess;
 }
 
 kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ranges, uint32_t numOfRanges) {

@@ -211,9 +211,10 @@ kern_return_t MacVFNUserClient::StaticHandleNvmeInit(OSObject* target, void* ref
 kern_return_t MacVFNUserClient::HandleNvmeInit(void* reference, IOUserClientMethodArguments* arguments)
 {
     kern_return_t ret = kIOReturnSuccess;
-    log_debug("MacVFNUserClient HandleNvmeInit");
-    ivars->macvfn->nvme_init();
-    log_debug("MacVFNUserClient HandleNvmeInit Done");
+    log_debug("MacVFNUserClient HandleNvmeInit: Device working as block storage. NVMe already initialized.");
+    // log_debug("MacVFNUserClient HandleNvmeInit");
+    // ivars->macvfn->nvme_init();
+    // log_debug("MacVFNUserClient HandleNvmeInit Done");
     return ret;
 }
 
