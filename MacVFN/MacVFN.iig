@@ -48,6 +48,8 @@ public:
 
     kern_return_t block_send_sq(uint32_t qid, NvmeSubmitCmd* nvme_cmd) LOCALONLY;
     kern_return_t block_recv_cq(uint32_t qid) LOCALONLY;
+    virtual void InterruptOccurred(OSAction* action, uint64_t count, uint64_t time) TYPE(IOInterruptDispatchSource::InterruptOccurred);
+    virtual void TimerEvent(OSAction* action, uint64_t time) TYPE(IOTimerDispatchSource::TimerOccurred);
 
     virtual kern_return_t DoAsyncEjectMedia(uint32_t requestID) override;
     virtual kern_return_t DoAsyncSynchronize(uint32_t requestID, uint64_t lba, uint64_t numOfBlocks) override;
