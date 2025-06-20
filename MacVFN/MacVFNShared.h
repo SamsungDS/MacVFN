@@ -41,27 +41,59 @@ typedef struct {
 } NvmeSubmitCmd;
 
 typedef struct {
-	// cdw 00
-	uint8_t opcode;
-	uint8_t _reserved;
-	uint16_t cid; // Command identifier
+    uint8_t  opcode;        // Command opcode
+    uint8_t  flags;         // Command flags (fused, etc.)
+    uint16_t cid;    // Command Identifier (CID)
+    uint32_t nsid;          // Namespace Identifier
 
-	// cdw 01
-	uint32_t nsid; // Namespace identifier
+    uint64_t reserved1;     // Reserved (typically for future use)
 
-    // cdw 02-09
-	uint32_t _reserved_02_09[8];
+    uint64_t mptr;          // Metadata Pointer
+    uint64_t prp1;          // PRP Entry 1 (data pointer)
+    uint64_t prp2;          // PRP Entry 2 (data pointer or PRP list)
 
-    // cdw 10-11
-	uint64_t slba;
+    uint64_t slba;          // Starting LBA (Logical Block Address)
+    uint16_t nlb;           // Number of Logical Blocks
 
-    // cdw 12
-	uint16_t _reserved_12;
-	uint16_t nlb;
+    uint16_t reserved2;     // Reserved for alignment
 
-    // cdw 13-15
-	uint32_t _reserved_13_15[3];
+    uint32_t cdw13;         // Command Dword 13
+    uint32_t cdw14;         // Command Dword 14
+    uint32_t cdw15;         // Command Dword 15
 } NVMeSpecIOCommand;
+
+typedef struct {
+    uint64_t NSZE;     // Namespace Size
+    uint64_t NCAP;     // Namespace Capacity
+    uint64_t NSUSE;    // Namespace Utilization
+    uint8_t  NSFEAT;   // Namespace Features
+    uint8_t  NLBAF;    // Number of LBA Formats
+    uint8_t  FLBAS;    // Formatted LBA Size
+    uint8_t  MC;       // Metadata Capabilities
+    uint8_t  DPC;      // End-to-end Data Protection Capabilities
+    uint8_t  DPS;      // End-to-end Data Protection Type Settings
+    uint8_t  NMIC;     // Namespace Multi-path I/O and Namespace Sharing Capabilities
+    uint8_t  RESCAP;   // Reservation Capabilities
+    uint8_t  FPI;      // Format Progress Indicator
+    uint8_t  DLFEAT;   // Deallocate Logical Block Features
+    uint16_t NAWUN;    // Namespace Atomic Write Unit Normal
+    uint16_t NAWUPF;   // Namespace Atomic Write Unit Power Fail
+    uint16_t NACWU;    // Namespace Atomic Compare & Write Unit
+    uint16_t NABSN;    // Namespace Atomic Boundary Size Normal
+    uint16_t NABO;     // Namespace Atomic Boundary Offset
+    uint16_t NABSPF;   // Namespace Atomic Boundary Size Power Fail
+    uint16_t NOIOB;    // Namespace Optimal IO Boundary
+    uint8_t  NVMCAP[16]; // NVM Capacity
+    uint8_t  reserved1[40];
+    uint8_t  NGUID[16]; // Namespace Globally Unique Identifier
+    uint8_t  EUI64[8];  // IEEE Extended Unique Identifier
+    struct {
+        uint16_t MS;    // Metadata Size (16 bits)
+        uint8_t LBADS;  // LBA Data Size
+        uint8_t RP;     // Relative Performance (only lower 2 bits used)
+    } LBAF[16]; // LBA Format Support (16 entries)
+    uint8_t  reserved2[192];
+} NVMeIdentifyNamespaceData;
 
 typedef struct {
     uint64_t id;
