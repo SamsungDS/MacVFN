@@ -764,13 +764,6 @@ IMPL(MacVFN, DoAsyncSynchronize) {
     return kIOReturnSuccess;
 }
 
-kern_return_t // (uint32_t requestID, IOMemoryDescriptor *buffer, uint32_t numOfRanges)
-IMPL(MacVFN, DoAsyncUnmap) {
-    log_debug("IMPL(MacVFN, DoAsyncUnmap) numOfBlocks: %x", numOfRanges);
-    MacVFN::Complete(requestID, kIOReturnSuccess);
-    return kIOReturnSuccess;
-}
-
 kern_return_t // (bool isRead,
 //uint32_t requestID,
 //uint64_t dmaAddr,
@@ -785,8 +778,8 @@ IMPL(MacVFN, DoAsyncReadWrite) {
     assert(numOfBlocks > 0);
 
     NVMeSpecIOCommand payload = {
-        .opcode = isRead ? (uint8_t)0x02 : (uint8_t)0x01,
-        .cid = 0, // Gets overriden through poke->process_sq->...->nvme_rq_prep_cmd
+        .opcode = isRead ? (uint8_t)NVME_OPC_READ : (uint8_t)NVME_OPC_WRITE,
+        .cid = 0, // Gets overriden through nvme_rq_exec->nvme_rq_prep_cmd
         .nsid = 1,
         .slba = lba,
         .nlb = (uint16_t) (numOfBlocks-1) // Zero-based
@@ -874,7 +867,14 @@ int MacVFN::block_recv_cq(uint32_t qid) {
 
         log_debug("block_recv_cq status: %x", cqe->sfp>>1);
         // TODO: Read cpl for success
-        MacVFN::CompleteIO(requestID, size, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
+
+        if (op & COMPLETE_NON_IO_FLAG){
+            // Mask out COMPLETE_NON_IO_FLAG from requestID
+            MacVFN::Complete(requestID & 0x7FFFFFFF, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
+        }
+        else {
+            MacVFN::CompleteIO(requestID, size, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
+        }
     }
 
     mb();
@@ -991,5 +991,69 @@ IMPL(MacVFN, RegisterDext) {
 }
 
 kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ranges, uint32_t numOfRanges) {
+    log_debug("MacVFN::DoAsyncUnmapPriv");
+
+    IOBufferMemoryDescriptor* dsmBuffer = nullptr;
+    kern_return_t ret = IOBufferMemoryDescriptor::Create(
+        kIOMemoryDirectionInOut,
+        numOfRanges * sizeof(NVMeSpecDSMRangeData),
+        __VFN_PAGESIZE,
+        &dsmBuffer
+    );
+    if (ret != kIOReturnSuccess || !dsmBuffer) {
+        log_error("Failed to allocate DSM buffer");
+        return kIOReturnNoMemory;
+    }
+
+    IOAddressSegment *address_segment;
+    ret = dsmBuffer->GetAddressRange(address_segment);
+    if (ret != kIOReturnSuccess || !dsmBuffer) {
+        log_error("Failed to allocate DSM buffer");
+        return kIOReturnNoMemory;
+    }
+
+    // Get the virtual address of the DSM buffer
+    NVMeSpecDSMRangeData* dsm_ranges = (NVMeSpecDSMRangeData*) address_segment->address;
+
+    for (uint32_t i = 0; i < numOfRanges; ++i) {
+        struct BlockRange range = ranges[i];
+        // Fill DSM range entry
+        dsm_ranges[i].CA = 0; // Context Attributes, set as needed
+        dsm_ranges[i].NLB = range.numOfBlocks - 1; // zero-based
+        dsm_ranges[i].SLBA = range.startBlock;
+    }
+
+    NVMeSpecDSMCommand payload = {
+        .opcode = NVME_OPC_DATASET_MANAGEMENT,
+        .cid = 0, // Gets overriden through nvme_rq_exec->nvme_rq_prep_cmd
+        .nsid = 1,
+        .nr = numOfRanges,
+        .attributes = 0b100, // Deallocate
+    };
+
+    if (MacVFN::dma_map_buffer(dsmBuffer, (void *) address_segment->address, address_segment->length)) {
+        return kIOReturnDMAError;
+    }
+
+    uint64_t iova;
+    if (iommu_translate_vaddr(__iommu_ctx(&ivars->ctrl.pci), (void *) address_segment->address, &iova)){
+        return kIOReturnError;
+    }
+
+    NvmeSubmitCmd cmd = {
+        .queue_id = ivars->block_storage_queue->id,
+        .backend_opaque = (COMPLETE_NON_IO_FLAG | ((uint64_t)requestID) << 32) | (numOfRanges * sizeof(NVMeSpecDSMRangeData)),
+        .dbuf_nbytes = numOfRanges * sizeof(NVMeSpecDSMRangeData),
+        .dbuf_offset = 0,
+        .dbuf_token = 0,
+        .dbuf_iova = iova,
+        .mbuf_nbytes = 0,
+        .mbuf_offset = 0,
+        .mbuf_token = 0
+    };
+    static_assert(sizeof(cmd.cmd) == sizeof(payload), "NVMe command size mismatch");
+    memcpy(&cmd.cmd, &payload, sizeof(payload));
+    MacVFN::block_send_sq(ivars->block_storage_queue->id, &cmd);
+
     return kIOReturnSuccess;
 }
