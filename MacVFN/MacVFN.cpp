@@ -176,8 +176,8 @@ kern_return_t MacVFN::IdentifyDrive(){
 	}
 
     memcpy(ivars->ctrl.serial, ((char *) vaddr) + NVME_IDENTIFY_CTRL_SERIAL_NUMBER, sizeof(ivars->ctrl.serial));
-	ivars->ctrl.mdts = *(((char *) vaddr) + NVME_IDENTIFY_CTRL_MDTS);
-    log_debug("mdts %x", ivars->ctrl.mdts);
+	uint8_t mdts = *(((char *) vaddr) + NVME_IDENTIFY_CTRL_MDTS);
+    log_debug("mdts %x", mdts);
     log_debug("mqes: %x", ivars->ctrl.config.mqes);
     log_debug("max sq %x, max cq %x", ivars->ctrl.config.nsqa+1, ivars->ctrl.config.ncqa+1);
 
@@ -208,14 +208,17 @@ kern_return_t MacVFN::IdentifyDrive(){
         log_debug("LBAF[%d]: MS=%u LBADS=%u RP=%u", i, ns->LBAF[i].MS, ns->LBAF[i].LBADS, ns->LBAF[i].RP & 0x3);
     }
 
+	uint64_t cap = le64_to_cpu(mmio_read64(ivars->ctrl.regs, NVME_REG_CAP));
+	uint8_t mpsmin = NVME_FIELD_GET(cap, CAP_MPSMIN);
+
     ivars->deviceParams.numOfBlocks = ns->NSZE;
     ivars->deviceParams.blockSize = 1 << ns->LBAF[ns->FLBAS].LBADS;
-    log_debug("Reported mpsmin %llx max IO size %llx", __mps_to_pagesize(ivars->ctrl.config.mpsmin), __mps_to_pagesize(ivars->ctrl.config.mpsmin) << ivars->ctrl.mdts);
-    if (ivars->ctrl.mdts == 0) { // Unlimited
+    log_debug("Reported mpsmin %llx max IO size %llx", __mps_to_pagesize(mpsmin), __mps_to_pagesize(mpsmin) << mdts);
+    if (mdts == 0) { // Unlimited
         ivars->deviceParams.maxIOSize = (1ull<<32)-1;
     }
     else {
-        ivars->deviceParams.maxIOSize = __mps_to_pagesize(ivars->ctrl.config.mpsmin) << ivars->ctrl.mdts;
+        ivars->deviceParams.maxIOSize = __mps_to_pagesize(mpsmin) << mdts;
     }
     ivars->deviceParams.numOfOutstandingIOs = ivars->block_storage_queue->depth;
     ivars->deviceParams.maxNumOfUnmapRegions = 1;
