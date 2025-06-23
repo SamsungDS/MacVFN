@@ -57,7 +57,7 @@ public:
 
     virtual kern_return_t DoAsyncEjectMedia(uint32_t requestID) override;
     virtual kern_return_t DoAsyncSynchronize(uint32_t requestID, uint64_t lba, uint64_t numOfBlocks) override;
-    virtual kern_return_t DoAsyncUnmap(uint32_t requestID, IOMemoryDescriptor *buffer, uint32_t numOfRanges) LOCAL override;
+    // virtual kern_return_t DoAsyncUnmap(uint32_t requestID, IOMemoryDescriptor *buffer, uint32_t numOfRanges) override;
     virtual kern_return_t DoAsyncReadWrite (bool isRead,
                                             uint32_t requestID,
                                             uint64_t dmaAddr,

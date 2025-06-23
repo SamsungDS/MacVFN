@@ -63,6 +63,30 @@ typedef struct {
 } NVMeSpecIOCommand;
 
 typedef struct {
+    uint8_t  opcode;        // Command opcode (should be NVME_OPC_DATASET_MANAGEMENT)
+    uint8_t  flags;         // Command flags
+    uint16_t cid;           // Command Identifier (CID)
+    uint32_t nsid;          // Namespace Identifier
+
+    uint64_t reserved1;     // Reserved
+
+    uint64_t mptr;          // Metadata Pointer (not used for DSM)
+    uint64_t prp1;          // PRP Entry 1 (pointer to range list)
+    uint64_t prp2;          // PRP Entry 2 (pointer to range list continuation or PRP list)
+
+    uint32_t nr;            // Number of Ranges (zero-based, so 0 = 1 range)
+    uint32_t attributes;    // Attributes (bit 2 = deallocate)
+
+    uint32_t reserved2[4];  // Reserved
+} NVMeSpecDSMCommand;
+
+typedef struct {
+    uint32_t CA;        // Context Attributes
+    uint32_t NLB;       // Number of Logical Blocks (zero-based, so 0 = 1 block)
+    uint64_t SLBA;      // Starting LBA
+} NVMeSpecDSMRangeData;
+
+typedef struct {
     uint64_t NSZE;     // Namespace Size
     uint64_t NCAP;     // Namespace Capacity
     uint64_t NSUSE;    // Namespace Utilization
@@ -95,8 +119,15 @@ typedef struct {
     uint8_t  reserved2[192];
 } NVMeIdentifyNamespaceData;
 
+#define NVME_OPC_READ             0x02
+#define NVME_OPC_WRITE            0x01
+#define NVME_OPC_FLUSH            0x00
+#define NVME_OPC_DATASET_MANAGEMENT 0x09
+
 #define NVME_IDENTIFY_CNS_NS 0x00
 #define NVME_IDENTIFY_CTRL_MDTS 0x4D
+
+#define COMPLETE_NON_IO_FLAG 1<<63
 
 typedef struct {
     uint64_t id;
