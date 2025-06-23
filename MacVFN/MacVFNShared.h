@@ -95,6 +95,9 @@ typedef struct {
     uint8_t  reserved2[192];
 } NVMeIdentifyNamespaceData;
 
+#define NVME_IDENTIFY_CNS_NS 0x00
+#define NVME_IDENTIFY_CTRL_MDTS 0x4D
+
 typedef struct {
     uint64_t id;
     uint64_t depth;
