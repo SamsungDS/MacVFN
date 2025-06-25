@@ -124,10 +124,21 @@ typedef struct {
 #define NVME_OPC_FLUSH            0x00
 #define NVME_OPC_DATASET_MANAGEMENT 0x09
 
+#define NVME_IDENTIFY_FLBAS_INDEX_MASK 0b1111
+
 #define NVME_IDENTIFY_CNS_NS 0x00
 #define NVME_IDENTIFY_CTRL_MDTS 0x4D
+#define NVME_IDENTIFY_CTRL_ONCS 0x208
 
-#define COMPLETE_NON_IO_FLAG 1<<63
+#define OPAQUE_HAS_CONTEXT (1ull<<63)
+
+typedef struct {
+    // uint32_t request_id;
+    IOBufferMemoryDescriptor* memory_descriptor;
+    IOAddressSegment address_segment;
+    uint64_t size;
+    uint8_t do_unmap;
+} NVMeBlockStorageCommandContext;
 
 typedef struct {
     uint64_t id;
