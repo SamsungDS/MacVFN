@@ -805,6 +805,13 @@ void MacVFN::stop_userclient(){
 kern_return_t // (uint32_t requestID)
 IMPL(MacVFN, DoAsyncEjectMedia) {
     log_debug("IMPL(MacVFN, DoAsyncEjectMedia) requestID: %x", requestID);
+
+    // TODO: nvme_close_all but also unmap all mappings that **are** from block storage
+    ::nvme_close(&ivars->ctrl);
+    MacVFN::nvme_close_all();
+    // TODO: ::iommu_unmap_all(__iommu_ctx(&ivars->ctrl.pci));
+    // TODO: MacVFNUserClient Stop
+
     MacVFN::Complete(requestID, kIOReturnSuccess);
     return kIOReturnSuccess;
 }
@@ -813,7 +820,34 @@ IMPL(MacVFN, DoAsyncEjectMedia) {
 kern_return_t // (uint32_t requestID, uint64_t lba, uint64_t numOfBlocks)
 IMPL(MacVFN, DoAsyncSynchronize) {
     log_debug("IMPL(MacVFN, DoAsyncSynchronize) requestID: %x lba: %llx numOfBlocks: %llx", requestID, lba, numOfBlocks);
-    MacVFN::Complete(requestID, kIOReturnSuccess);
+
+    NVMeSpecIOCommand payload = {
+        .opcode = NVME_OPC_FLUSH,
+        .cid = 0, // Gets overriden through nvme_rq_exec->nvme_rq_prep_cmd
+        .nsid = 1,
+    };
+
+    NVMeBlockStorageCommandContext* context = &ivars->block_storage_command_context[requestID];
+    context->do_unmap = false;
+
+    assert((OPAQUE_HAS_CONTEXT & ((uint64_t) requestID)) == 0); // Otherwise hacking the opaque doesn't work
+    NvmeSubmitCmd cmd = {
+        .queue_id = ivars->block_storage_queue->id,
+        .backend_opaque = OPAQUE_HAS_CONTEXT | ((uint64_t) requestID),
+        .dbuf_nbytes = 0,
+        .dbuf_offset = 0,
+        .dbuf_token = 0,
+        .dbuf_iova = 0,
+        .mbuf_nbytes = 0,
+        .mbuf_offset = 0,
+        .mbuf_token = 0
+    };
+    static_assert(sizeof(cmd.cmd) == sizeof(payload), "NVMe command size mismatch");
+    memcpy(&cmd.cmd, &payload, sizeof(payload));
+    log_debug("Prepared NvmeSubmitCmd, sending to block_send_sq");
+
+    MacVFN::block_send_sq(ivars->block_storage_queue->id, &cmd);
+
     return kIOReturnSuccess;
 }
 
@@ -864,13 +898,15 @@ kern_return_t MacVFN::block_send_sq(uint32_t qid, NvmeSubmitCmd* nvme_cmd) {
     sq = &ivars->ctrl.sq[qid];
 
     struct nvme_rq *rq = ::nvme_rq_acquire_atomic(sq);
+    assert(rq);
     rq->opaque = (void*) nvme_cmd->backend_opaque;
     mb();
 
-    assert(nvme_cmd->dbuf_iova);
-    log_debug("nvme_rq_map_prp: ctrl=%p rq=%p cmd=%p iova=0x%llx nbytes=0x%llx",
-              &ivars->ctrl, rq, &nvme_cmd->cmd, nvme_cmd->dbuf_iova, nvme_cmd->dbuf_nbytes);
-    assert(::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd->cmd, nvme_cmd->dbuf_iova, nvme_cmd->dbuf_nbytes) == 0);
+    if (nvme_cmd->dbuf_iova){
+        log_debug("nvme_rq_map_prp: ctrl=%p rq=%p cmd=%p iova=0x%llx nbytes=0x%llx",
+                  &ivars->ctrl, rq, &nvme_cmd->cmd, nvme_cmd->dbuf_iova, nvme_cmd->dbuf_nbytes);
+        assert(::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd->cmd, nvme_cmd->dbuf_iova, nvme_cmd->dbuf_nbytes) == 0);
+    }
 
     ::nvme_rq_exec(rq, (union nvme_cmd *)&nvme_cmd->cmd);
     log_info("block_send_sq: opaque qid:%x, cid:%x, opaque:%llx", qid, rq->cid, (uint64_t) rq->opaque);
@@ -917,8 +953,6 @@ int MacVFN::block_recv_cq(uint32_t qid) {
         nvme_rq_release_atomic(rq);
 
         log_debug("block_recv_cq status: %x", cqe->sfp>>1);
-        // TODO: Read cpl for success
-
         if (op & OPAQUE_HAS_CONTEXT){
             uint64_t requestID = op & ~OPAQUE_HAS_CONTEXT;
             NVMeBlockStorageCommandContext* context = &ivars->block_storage_command_context[requestID];
