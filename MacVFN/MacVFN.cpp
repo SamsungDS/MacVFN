@@ -22,6 +22,7 @@
 #include <vfn/nvme.h>
 #include "libvfn/src/iommu/context.h"
 #include "libvfn/src/nvme/types.h"
+#include "libvfn/ccan/ccan/minmax/minmax.h"
 
 #define MAX_QUEUE_COUNT 64
 
@@ -40,10 +41,12 @@ struct MacVFN_IVars
     RingQueue* sq_ring_queues[MAX_QUEUE_COUNT];
 
     NvmeQueue* block_storage_queue;
+    struct DeviceString product_string;
     struct DeviceParams deviceParams;
     IODispatchQueue* default_queue;
     OSAction* interrupt_occured[MAX_QUEUE_COUNT];
     IOInterruptDispatchSource* interrupt_source[MAX_QUEUE_COUNT];
+    NVMeBlockStorageCommandContext* block_storage_command_context;
 
     IOTimerDispatchSource* timer_source;
     OSAction* timer_action;
@@ -175,8 +178,26 @@ kern_return_t MacVFN::IdentifyDrive(){
 		return kIOReturnNoDevice;
 	}
 
-    memcpy(ivars->ctrl.serial, ((char *) vaddr) + NVME_IDENTIFY_CTRL_SERIAL_NUMBER, sizeof(ivars->ctrl.serial));
+
+    memcpy(&ivars->product_string, ((char *) vaddr) + NVME_IDENTIFY_CTRL_SERIAL_NUMBER, NVME_CTRL_SERIAL_LEN);
+
+    size_t product_len = 0;
+    // Serial is not guaranteed to be null-terminated, so only stop at space or max length
+    while (product_len < NVME_CTRL_SERIAL_LEN && ((char *)&ivars->product_string)[product_len] != ' ') {
+        product_len += 1;
+    }
+    product_len += 1; // Get one space
+    memcpy(((char *)&ivars->product_string) + product_len, ((char *) vaddr) + NVME_IDENTIFY_CTRL_SERIAL_NUMBER + NVME_CTRL_SERIAL_LEN, NVME_CTRL_MODEL_LEN);
+    while (product_len < NVME_CTRL_MODEL_LEN && ((char *)&ivars->product_string)[product_len] != ' ') {
+        product_len += 1;
+    }
+    ((char *)&ivars->product_string)[product_len] = '\0';
+    ((char *)&ivars->product_string)[kMaxDeviceStringLength - 1] = '\0'; // Just for safety
+
+
 	uint8_t mdts = *(((char *) vaddr) + NVME_IDENTIFY_CTRL_MDTS);
+    uint8_t oncs = *(((char *) vaddr) + NVME_IDENTIFY_CTRL_ONCS);
+    log_debug("Support DSM: %x", oncs & 0b100);
     log_debug("mdts %x", mdts);
     log_debug("mqes: %x", ivars->ctrl.config.mqes);
     log_debug("max sq %x, max cq %x", ivars->ctrl.config.nsqa+1, ivars->ctrl.config.ncqa+1);
@@ -208,24 +229,37 @@ kern_return_t MacVFN::IdentifyDrive(){
         log_debug("LBAF[%d]: MS=%u LBADS=%u RP=%u", i, ns->LBAF[i].MS, ns->LBAF[i].LBADS, ns->LBAF[i].RP & 0x3);
     }
 
+    uint64_t selected_lbaf = ns->FLBAS & NVME_IDENTIFY_FLBAS_INDEX_MASK ;
+    log_debug("Selected LBA Format: %llx", selected_lbaf);
+
 	uint64_t cap = le64_to_cpu(mmio_read64(ivars->ctrl.regs, NVME_REG_CAP));
 	uint8_t mpsmin = NVME_FIELD_GET(cap, CAP_MPSMIN);
 
     ivars->deviceParams.numOfBlocks = ns->NSZE;
-    ivars->deviceParams.blockSize = 1 << ns->LBAF[ns->FLBAS].LBADS;
-    log_debug("Reported mpsmin %llx max IO size %llx", __mps_to_pagesize(mpsmin), __mps_to_pagesize(mpsmin) << mdts);
+
+    log_debug("blockSize calculation: FLBAS=%u, LBADS=%u", ns->FLBAS, ns->LBAF[ns->FLBAS].LBADS);
+    ivars->deviceParams.blockSize = 1 << ns->LBAF[selected_lbaf].LBADS;
+    log_debug("blockSize set to: %u", ivars->deviceParams.blockSize);
     if (mdts == 0) { // Unlimited
         ivars->deviceParams.maxIOSize = (1ull<<32)-1;
     }
     else {
         ivars->deviceParams.maxIOSize = __mps_to_pagesize(mpsmin) << mdts;
     }
+    log_debug("Set maxIOSize to %x (mpsmin=%llx, mdts=%x)", ivars->deviceParams.maxIOSize, __mps_to_pagesize(mpsmin), mdts);
+
+
+    if (!ivars->block_storage_queue) {
+        log_error("block_storage_queue is not initialized");
+        return kIOReturnNoDevice;
+    }
     ivars->deviceParams.numOfOutstandingIOs = ivars->block_storage_queue->depth;
-    ivars->deviceParams.maxNumOfUnmapRegions = 1;
-	ivars->deviceParams.minSegmentAlignment = __VFN_PAGESIZE;
-	ivars->deviceParams.numOfAddressBits = 48;
-    ivars->deviceParams.isUnmapSupported = true;
-	ivars->deviceParams.isFUASupported = false; // forced unit access
+    ivars->deviceParams.minSegmentAlignment = __VFN_PAGESIZE;
+    ivars->deviceParams.numOfAddressBits = 48;
+    ivars->deviceParams.isUnmapSupported = oncs & 0b100;
+    ivars->deviceParams.maxNumOfUnmapRegions = ivars->deviceParams.isUnmapSupported ? 255 : 0;
+    ivars->deviceParams.isFUASupported = false; // forced unit access
+
     return kIOReturnSuccess;
 }
 
@@ -235,16 +269,19 @@ IMPL(MacVFN, Start)
 {
     log_debug("MacVFN: Start");
     kern_return_t ret;
+    NvmeQueue* new_queue;
+    IOServiceName service_name;
 
     ivars->pciDevice = OSDynamicCast(IOPCIDevice, provider);
     if (ivars->pciDevice == NULL) {
-        return kIOReturnNoDevice;
+        ret = kIOReturnNoDevice;
+        goto fail;
     }
     ivars->pciDevice->retain();
 
     ret = ivars->pciDevice->Open(this, 0);
     if (ret != kIOReturnSuccess) {
-        return kIOReturnNoDevice;
+        goto fail;
     }
 
     for (int qid = 0; qid < MAX_QUEUE_COUNT; qid++){
@@ -268,52 +305,58 @@ IMPL(MacVFN, Start)
 
     if (CopyDispatchQueue(kIOServiceDefaultQueueName, &ivars->default_queue) != kIOReturnSuccess) {
         log_debug("failed to copy queue");
-        return kIOReturnError;
-    }
-
-    ret = MacVFN::ConfigureInterrupts();
-    if (ret != kIOReturnSuccess) {
-        return kIOReturnNoDevice;
+        ret = kIOReturnError;
+        goto fail;
     }
 
     ret = MacVFN::nvme_init();
     if (ret != kIOReturnSuccess) {
-        return kIOReturnNoDevice;
+        goto fail;
     }
 
+    log_debug("nsqa: %x", ivars->ctrl.config.nsqa);
+    log_debug("mqes: %x", ivars->ctrl.config.mqes);
+    ivars->outstanding = 0;
 
-    NvmeQueue* new_queue = IONewZero(NvmeQueue, 1);
-    new_queue->id = ivars->ctrl.config.nsqa+1;
+    new_queue = IONewZero(NvmeQueue, 1);
+    new_queue->id = min(MAX_QUEUE_COUNT-1, ivars->ctrl.config.nsqa+1);
     new_queue->depth = ivars->ctrl.config.mqes;
     new_queue->vector = 5; // NOTE: Just testing, by giving something != 0, 1 or qid
     ivars->block_storage_queue = new_queue;
 
+    ret = MacVFN::IdentifyDrive();
+    if (ret != kIOReturnSuccess) {
+        goto fail;
+    }
+
+    ivars->block_storage_command_context = IONewZero(NVMeBlockStorageCommandContext, new_queue->depth+1);
+    if (!ivars) {
+        ret = kIOReturnNoMemory;
+        goto fail;
+    }
+
+    ret = MacVFN::ConfigureInterrupts();
+    if (ret != kIOReturnSuccess) {
+        goto fail;
+    }
+
     ret = MacVFN::nvme_create_ioqpair(ivars->block_storage_queue);
     if (ret != kIOReturnSuccess){
         log_debug("Create io queue pair failed!");
-        return ret;
-    }
-
-    ret = MacVFN::IdentifyDrive();
-    if (ret != kIOReturnSuccess) {
-        return kIOReturnNoDevice;
+        goto fail;
     }
 
     ret = MacVFN::ConfigureTimer();
     if (ret != kIOReturnSuccess) {
-        return kIOReturnNoDevice;
+        goto fail;
     }
-
-    ivars->outstanding = 0;
-
 
     // NOTE: Start after NVMe is initialized, otherwise we get race-conditions to GetDeviceParams etc.
     ret = Start(provider, SUPERDISPATCH);
     if (ret != kIOReturnSuccess) {
-        return kIOReturnNoDevice;
+        goto fail;
     }
 
-    IOServiceName service_name;
     memcpy((void*)service_name, (void*)"MacVFN-", 8);
     memcpy(service_name+7, ivars->ctrl.serial, 20);
     for (int i=0; i < 128; i++){
@@ -343,6 +386,10 @@ IMPL(MacVFN, Start)
 
     log_debug("Driver started!");
     return ret;
+fail:
+    log_error("The driver failed to start. ret is: %x", ret);
+    Stop(provider);
+    return ret;
 }
 
 kern_return_t
@@ -354,6 +401,12 @@ IMPL(MacVFN, Stop) {
         ivars->ctrl.pci.dev = NULL;
     }
 
+    if (ivars->block_storage_queue){
+        if (ivars->block_storage_command_context){
+            IOSafeDeleteNULL(ivars->block_storage_command_context, NVMeBlockStorageCommandContext, ivars->block_storage_queue->depth+1);
+        }
+        IOSafeDeleteNULL(ivars->block_storage_queue, NvmeQueue, 1);
+    }
     OSSafeReleaseNULL(ivars->ctrl.pci.iommu_mappings);
 
     if (ivars->pciDevice) {
@@ -820,7 +873,7 @@ kern_return_t MacVFN::block_send_sq(uint32_t qid, NvmeSubmitCmd* nvme_cmd) {
     assert(::nvme_rq_map_prp(&ivars->ctrl, rq, (union nvme_cmd *)&nvme_cmd->cmd, nvme_cmd->dbuf_iova, nvme_cmd->dbuf_nbytes) == 0);
 
     ::nvme_rq_exec(rq, (union nvme_cmd *)&nvme_cmd->cmd);
-    log_info("block_send_sq: opaque %x, %x, %llx", qid, rq->cid, (uint64_t) rq->opaque);
+    log_info("block_send_sq: opaque qid:%x, cid:%x, opaque:%llx", qid, rq->cid, (uint64_t) rq->opaque);
     ivars->outstanding += 1;
 
     return kIOReturnSuccess;
@@ -857,9 +910,7 @@ int MacVFN::block_recv_cq(uint32_t qid) {
         log_debug("block_recv_cq: opaque %llx", (uint64_t)rq->opaque);
 
         uint64_t op = (uint64_t)rq->opaque;
-        uint64_t requestID = op >> 32;
-        uint64_t size = op & 0xFFFFFFFF;
-        log_debug("%llx, %llx, %llx", op, requestID, size);
+        log_debug("%llx, %llx, %llx, has context: %llx", op, ~OPAQUE_HAS_CONTEXT, op & ~OPAQUE_HAS_CONTEXT, op & OPAQUE_HAS_CONTEXT);
 
         memcpy(&nvme_cmd.cpl, cqe, sizeof(nvme_cmd.cpl));
         mb();
@@ -868,12 +919,19 @@ int MacVFN::block_recv_cq(uint32_t qid) {
         log_debug("block_recv_cq status: %x", cqe->sfp>>1);
         // TODO: Read cpl for success
 
-        if (op & COMPLETE_NON_IO_FLAG){
-            // Mask out COMPLETE_NON_IO_FLAG from requestID
-            MacVFN::Complete(requestID & 0x7FFFFFFF, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
+        if (op & OPAQUE_HAS_CONTEXT){
+            uint64_t requestID = op & ~OPAQUE_HAS_CONTEXT;
+            NVMeBlockStorageCommandContext* context = &ivars->block_storage_command_context[requestID];
+
+            if (context->do_unmap){
+                if (iommu_unmap_vaddr(__iommu_ctx(&ivars->ctrl.pci), (void*)context->address_segment.address, NULL)) {
+                    log_error("Failed to do iommu_unmap_vaddr");
+                }
+            }
+            MacVFN::Complete(requestID, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
         }
         else {
-            MacVFN::CompleteIO(requestID, size, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
+            MacVFN::CompleteIO(op >> 32, op & 0xFFFFFFFF, (cqe->sfp>>1) == 0 ? kIOReturnSuccess : kIOReturnInvalid);
         }
     }
 
@@ -921,7 +979,7 @@ IMPL(MacVFN, GetDeviceParams) {
 kern_return_t // (struct DeviceString *vendor)
 IMPL(MacVFN, GetVendorString) {
     log_debug("IMPL(MacVFN, GetVendorString)");
-    strncpy((char*)vendor, "CustomVendor", kMaxDeviceStringLength - 1);
+    strncpy((char*)vendor, "MacVFN ", kMaxDeviceStringLength - 1);
     ((char*)vendor)[kMaxDeviceStringLength - 1] = '\0';
     return kIOReturnSuccess;
 }
@@ -929,7 +987,7 @@ IMPL(MacVFN, GetVendorString) {
 kern_return_t // (struct DeviceString *product)
 IMPL(MacVFN, GetProductString) {
     log_debug("IMPL(MacVFN, GetProductString)");
-    strncpy((char*)product, "CustomProduct", kMaxDeviceStringLength - 1);
+    strncpy((char*)product, (char*)&ivars->product_string, kMaxDeviceStringLength - 1);
     ((char*)product)[kMaxDeviceStringLength - 1] = '\0';
     return kIOReturnSuccess;
 }
@@ -937,7 +995,7 @@ IMPL(MacVFN, GetProductString) {
 kern_return_t // (struct DeviceString *revision)
 IMPL(MacVFN, GetRevisionString) {
     log_debug("IMPL(MacVFN, GetRevisionString)");
-    strncpy((char*)revision, "CustomRevision", kMaxDeviceStringLength - 1);
+    strncpy((char*)revision, "v0.1", kMaxDeviceStringLength - 1);
     ((char*)revision)[kMaxDeviceStringLength - 1] = '\0';
     return kIOReturnSuccess;
 }
@@ -945,7 +1003,8 @@ IMPL(MacVFN, GetRevisionString) {
 kern_return_t // (struct DeviceString *additionalInfo)
 IMPL(MacVFN, GetAdditionalInfoString) {
     log_debug("IMPL(MacVFN, GetAdditionalInfoString)");
-    strncpy((char*)additionalInfo, "CustomAdditionalInfo", kMaxDeviceStringLength - 1);
+    // NOTE: Documented as unused by macOS
+    strncpy((char*)additionalInfo, "", kMaxDeviceStringLength - 1);
     ((char*)additionalInfo)[kMaxDeviceStringLength - 1] = '\0';
     return kIOReturnSuccess;
 }
@@ -991,7 +1050,7 @@ IMPL(MacVFN, RegisterDext) {
 }
 
 kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ranges, uint32_t numOfRanges) {
-    log_debug("MacVFN::DoAsyncUnmapPriv");
+    log_debug("MacVFN::DoAsyncUnmapPriv - start %x, numOfRanges:%x", requestID, numOfRanges);
 
     IOBufferMemoryDescriptor* dsmBuffer = nullptr;
     kern_return_t ret = IOBufferMemoryDescriptor::Create(
@@ -1000,20 +1059,23 @@ kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ra
         __VFN_PAGESIZE,
         &dsmBuffer
     );
+    log_debug("After IOBufferMemoryDescriptor::Create, ret=%x, dsmBuffer=%p", ret, dsmBuffer);
     if (ret != kIOReturnSuccess || !dsmBuffer) {
         log_error("Failed to allocate DSM buffer");
         return kIOReturnNoMemory;
     }
 
-    IOAddressSegment *address_segment;
-    ret = dsmBuffer->GetAddressRange(address_segment);
-    if (ret != kIOReturnSuccess || !dsmBuffer) {
+    IOAddressSegment address_segment;
+    ret = dsmBuffer->GetAddressRange(&address_segment);
+    log_debug("After GetAddressRange, ret=%x", ret);
+    if (ret != kIOReturnSuccess) {
         log_error("Failed to allocate DSM buffer");
         return kIOReturnNoMemory;
     }
 
     // Get the virtual address of the DSM buffer
-    NVMeSpecDSMRangeData* dsm_ranges = (NVMeSpecDSMRangeData*) address_segment->address;
+    NVMeSpecDSMRangeData* dsm_ranges = (NVMeSpecDSMRangeData*) address_segment.address;
+    log_debug("DSM buffer vaddr: %llx, length: %llx", address_segment.address, address_segment.length);
 
     for (uint32_t i = 0; i < numOfRanges; ++i) {
         struct BlockRange range = ranges[i];
@@ -1021,28 +1083,39 @@ kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ra
         dsm_ranges[i].CA = 0; // Context Attributes, set as needed
         dsm_ranges[i].NLB = range.numOfBlocks - 1; // zero-based
         dsm_ranges[i].SLBA = range.startBlock;
+        log_debug("DSM range[%u]: SLBA=%llx NLB=%x", i, dsm_ranges[i].SLBA, dsm_ranges[i].NLB);
     }
 
     NVMeSpecDSMCommand payload = {
         .opcode = NVME_OPC_DATASET_MANAGEMENT,
         .cid = 0, // Gets overriden through nvme_rq_exec->nvme_rq_prep_cmd
         .nsid = 1,
-        .nr = numOfRanges,
+        .nr = numOfRanges - 1, // Zero based
         .attributes = 0b100, // Deallocate
     };
+    log_debug("DSM payload: opcode=0x%02x cid=0x%04x nsid=0x%08x nr=0x%02x attributes=0x%02x",
+              payload.opcode, payload.cid, payload.nsid, payload.nr, payload.attributes);
+    log_debug("Prepared DSM command payload");
 
-    if (MacVFN::dma_map_buffer(dsmBuffer, (void *) address_segment->address, address_segment->length)) {
-        return kIOReturnDMAError;
-    }
-
+    // int MacVFN::dma_map_buffer(IOMemoryDescriptor* mem, void *vaddr, size_t len){
     uint64_t iova;
-    if (iommu_translate_vaddr(__iommu_ctx(&ivars->ctrl.pci), (void *) address_segment->address, &iova)){
-        return kIOReturnError;
+    ret = libvfn_to_kern_return(::_iommu_map_vaddr(__iommu_ctx(&ivars->ctrl.pci), (void *) address_segment.address, address_segment.length, &iova, IOMMU_MAP_FIXED_IOVA, (void*) dsmBuffer));
+    if (ret != kIOReturnSuccess) {
+        log_error("Failed to do _iommu_map_vaddr");
+        return kIOReturnNoMemory;
     }
 
+    NVMeBlockStorageCommandContext* context = &ivars->block_storage_command_context[requestID];
+    // context->request_id = requestID;
+    context->memory_descriptor = dsmBuffer;
+    context->address_segment = address_segment;
+    context->size = numOfRanges * sizeof(NVMeSpecDSMRangeData);
+    context->do_unmap = true;
+
+    assert((OPAQUE_HAS_CONTEXT & ((uint64_t) requestID)) == 0); // Otherwise hacking the opaque doesn't work
     NvmeSubmitCmd cmd = {
         .queue_id = ivars->block_storage_queue->id,
-        .backend_opaque = (COMPLETE_NON_IO_FLAG | ((uint64_t)requestID) << 32) | (numOfRanges * sizeof(NVMeSpecDSMRangeData)),
+        .backend_opaque = OPAQUE_HAS_CONTEXT | ((uint64_t) requestID),
         .dbuf_nbytes = numOfRanges * sizeof(NVMeSpecDSMRangeData),
         .dbuf_offset = 0,
         .dbuf_token = 0,
@@ -1053,7 +1126,10 @@ kern_return_t MacVFN::DoAsyncUnmapPriv(uint32_t requestID, struct BlockRange *ra
     };
     static_assert(sizeof(cmd.cmd) == sizeof(payload), "NVMe command size mismatch");
     memcpy(&cmd.cmd, &payload, sizeof(payload));
+    log_debug("Prepared NvmeSubmitCmd, sending to block_send_sq");
+
     MacVFN::block_send_sq(ivars->block_storage_queue->id, &cmd);
 
+    log_debug("MacVFN::DoAsyncUnmapPriv - end");
     return kIOReturnSuccess;
 }
