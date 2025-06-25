@@ -34,6 +34,11 @@
 				<key>IOUserClass</key>
 				<string>MacVFNUserClient</string>
 			</dict>
+			<key>Device Characteristics</key>
+			<dict>
+				<key>Medium Type</key>
+				<string>Solid State</string>
+			</dict>
 		</dict>
 	</dict>
 	<key>OSBundleUsageDescription</key>
