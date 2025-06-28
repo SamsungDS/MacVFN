@@ -78,7 +78,6 @@ void MacVFN::free(){
     log_debug("MacVFN Free");
 
     OSSafeReleaseNULL(ivars->ctrl.pci.dev);
-    OSSafeReleaseNULL(ivars->ctrl.pci.iommu_mappings);
     OSSafeReleaseNULL(ivars->pciDevice);
     IOSafeDeleteNULL(ivars, MacVFN_IVars, 1);
 
@@ -294,7 +293,6 @@ IMPL(MacVFN, Start)
     ivars->ctrl = {};
     ivars->ctrl.pci.dev = ivars->pciDevice;
     ivars->ctrl.pci.dev->retain();
-    ivars->ctrl.pci.iommu_mappings = OSDictionary::withCapacity(16);
     ::iommu_ctx_init(__iommu_ctx(&ivars->ctrl));
 
     uint16_t commandRegister;
@@ -407,7 +405,6 @@ IMPL(MacVFN, Stop) {
         }
         IOSafeDeleteNULL(ivars->block_storage_queue, NvmeQueue, 1);
     }
-    OSSafeReleaseNULL(ivars->ctrl.pci.iommu_mappings);
 
     if (ivars->pciDevice) {
 
@@ -790,8 +787,6 @@ void MacVFN::nvme_close_all(){
         ivars->sq_ring_queues[qid] = NULL;
         ivars->cq_ring_queues[qid] = NULL;
     }
-
-    log_info("IOMMU Mapping still have %u entries", ivars->ctrl.pci.iommu_mappings->getCount());
 
     // ::iommu_unmap_all(__iommu_ctx(&ivars->ctrl.pci));
 }
