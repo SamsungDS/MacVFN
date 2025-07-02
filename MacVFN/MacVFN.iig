@@ -18,6 +18,7 @@
 #include <DriverKit/IOService.iig>
 #include <PCIDriverKit/IOPCIDevice.iig>
 #include "MacVFNShared.h"
+#include "MacVFNNVMeSpec.h"
 #include <BlockStorageDeviceDriverKit/IOUserBlockStorageDevice.iig>
 
 class MacVFN: public IOUserBlockStorageDevice
@@ -36,15 +37,20 @@ public:
     kern_return_t nvme_delete_ioqpair(NvmeQueue* queue) LOCALONLY;
     int dma_map_buffer(IOMemoryDescriptor* mem, void *vaddr, size_t len) LOCALONLY;
     int dma_unmap_buffer(IOMemoryDescriptor* mem, void *vaddr) LOCALONLY;
-    kern_return_t get_queue_buffer(uint32_t qid, uint32_t sq, IOMemoryDescriptor **memory) LOCALONLY;
-    kern_return_t poke(uint32_t sqid, uint32_t cqid, struct buffer* buffers) LOCALONLY;
-    kern_return_t process_sq(uint32_t qid, struct buffer* buffers) LOCALONLY;
-    kern_return_t process_cq(uint32_t qid) LOCALONLY;
+    kern_return_t get_queue_buffer(uint64_t qid, uint64_t sq, IOMemoryDescriptor **memory) LOCALONLY;
+    kern_return_t poke(uint64_t sqid, uint64_t cqid, struct buffer* buffers) LOCALONLY;
+    kern_return_t process_sq(uint64_t qid, struct buffer* buffers) LOCALONLY;
+    kern_return_t process_cq(uint64_t qid) LOCALONLY;
     void stop_userclient() LOCALONLY;
     void nvme_close_all() LOCALONLY;
 
     kern_return_t ConfigureInterrupts() LOCALONLY;
     kern_return_t ConfigureTimer() LOCALONLY;
+    kern_return_t IdentifyNamespace(NVMeIdentifyNamespaceData* vaddr_ns) LOCALONLY;
+    kern_return_t IdentifyController(NVMeIdentifyControllerData* vaddr) LOCALONLY;
+    kern_return_t UpdateProductString(NVMeIdentifyControllerData* vaddr) LOCALONLY;
+    kern_return_t UpdatePowerStates(NVMeIdentifyControllerData* vaddr_ctrl) LOCALONLY;
+    kern_return_t UpdateDeviceParams(NVMeIdentifyControllerData* vaddr_ctrl, NVMeIdentifyNamespaceData* vaddr_ns) LOCALONLY;
     kern_return_t IdentifyDrive() LOCALONLY;
 
     kern_return_t block_send_sq(uint32_t qid, NvmeSubmitCmd* nvme_cmd) LOCALONLY;

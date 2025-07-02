@@ -185,7 +185,6 @@ const IOUserClientMethodDispatch externalMethodChecks[NUMBER_OF_EXTERNAL_METHODS
 
 kern_return_t MacVFNUserClient::ExternalMethod(uint64_t selector, IOUserClientMethodArguments* arguments, const IOUserClientMethodDispatch* dispatch, OSObject* target, void* reference)
 {
-    kern_return_t ret = kIOReturnSuccess;
     log_debug("MacVFNUserClient ExternalMethod %llu", selector);
 
     if (selector < NUMBER_OF_EXTERNAL_METHODS) {
@@ -232,8 +231,8 @@ kern_return_t MacVFNUserClient::StaticHandleNvmeOneshot(OSObject* target, void* 
 kern_return_t MacVFNUserClient::HandleNvmeOneshot(void* reference, IOUserClientMethodArguments* arguments)
 {
     uint64_t vaddr;
-    IOMemoryDescriptor *buffer;
-    kern_return_t ret = kIOReturnSuccess;
+    IOMemoryDescriptor *buffer = NULL;
+    kern_return_t ret;
 
     log_debug("MacVFNUserClient HandleNvmeOneshot");
     NvmeSubmitCmd* nvme_cmd = (NvmeSubmitCmd*)arguments->structureInput->getBytesNoCopy();
@@ -253,8 +252,8 @@ kern_return_t MacVFNUserClient::HandleNvmeOneshot(void* reference, IOUserClientM
     }
 
     log_debug("MacVFNUserClient HandleNvmeOneshot IOBufferMemoryDescriptor: %p, %llx", buffer, vaddr);
-    uint64_t nvme_ret = ivars->macvfn->nvme_oneshot(nvme_cmd, (void*) vaddr);
-    log_debug("MacVFNUserClient HandleNvmeOneshot: %llu", nvme_ret);
+    ret = ivars->macvfn->nvme_oneshot(nvme_cmd, (void*) vaddr);
+    log_debug("MacVFNUserClient HandleNvmeOneshot: %d", ret);
 
     arguments->structureOutput = OSData::withBytes(nvme_cmd, sizeof(NvmeSubmitCmd));
     log_debug("MacVFNUserClient HandleNvmeOneshot Done");
@@ -408,6 +407,6 @@ kern_return_t MacVFNUserClient::StaticHandleNvmePoke(OSObject* target, void* ref
 
 kern_return_t MacVFNUserClient::HandleNvmePoke(void* reference, IOUserClientMethodArguments* arguments)
 {
-    kern_return_t ret = ivars->macvfn->poke(arguments->scalarInput[0], arguments->scalarInput[1], ivars->buffers);
+    kern_return_t ret = ivars->macvfn->poke((uint64_t)arguments->scalarInput[0], (uint64_t)arguments->scalarInput[1], ivars->buffers);
     return ret;
 }
