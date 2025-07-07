@@ -8,6 +8,11 @@
 #ifndef MacVFNNVMeSpec_h
 #define MacVFNNVMeSpec_h
 
+#define NVME_ADMIN_GET_FEATURES 0x0a
+#define NVME_FEAT_FID_POWER_MANAGEMENT 0x02
+#define NVME_FEAT_FID_APST 0x0C
+#define NVME_FEAT_FID_NONOP_PS_CFG 0x11
+
 typedef struct {
     uint8_t  opcode;        // Command opcode
     uint8_t  flags;         // Command flags (fused, etc.)
@@ -91,6 +96,8 @@ typedef struct {
     } LBAF[16]; // LBA Format Support (16 entries)
     uint8_t  reserved2[192];
 } NVMeIdentifyNamespaceData;
+
+#define NVME_AUTONOMOUS_POWER_STATE_TRANSITION_DATA_SIZE 256
 
 typedef struct {
     uint16_t MP;        // Maximum Power (centiwatts)
