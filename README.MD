@@ -1,6 +1,9 @@
 # MacVFN (BETA)
 This is a port of [libvfn](https://github.com/OpenMPDK/libvfn) for macOS and implemented into [xNVMe](https://github.com/OpenMPDK/xnvme). It utilizes DriverKit to hook an external PCI NVMe device (through PCIDriverKit), and allows user-space applications to take control of the device.
 
+It also registers as a [block storage device](https://developer.apple.com/documentation/blockstoragedevicedriverkit), which supports Disk Utility, formating, mounting etc.
+
+
 **This is not suitable for production**, as it requires [disabling SIP](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection?language=objc), and everything has to be self-signed. The code might also be buggy or have improper memory management, as this is just a proof-of-concept at this point.
 
 # State of the code
@@ -10,9 +13,9 @@ Although it's a port of libvfn, there is no way of running any of the example co
 
 ## TODO list:
 
-* Interrupts
 * Timeouts
-* Register with [BlockStorageDeviceDriverKit](https://developer.apple.com/documentation/blockstoragedevicedriverkit)
+* ~~Interrupts~~
+* ~~Register with[BlockStorageDeviceDriverKit](https://developer.apple.com/documentation/blockstoragedevicedriverkit)~~
 
 # Installation
 
@@ -20,15 +23,17 @@ These are the basic steps to build and install the driver:
 
 0. [Disable SIP](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection?language=objc)
 1. Run `systemextensionsctl developer on` to [allow System Extensions from any directory](https://developer.apple.com/documentation/driverkit/debugging_and_testing_system_extensions)
-2. Identify the newest or matching tagged xNVMe version of MacVFN (or go with `master`)
-3. Git clone this repo with submodules: `git clone --recurse-submodules --branch xnvme_vX.Y.Z https://github.com/SamsungDS/MacVFN.git`
-4. Run `make build install kill log`, approve system extension and type sudo-password as needed
+2. Identify the newest or matching "tagged xNVMe version" of MacVFN (or go with `master`)
+3. Git clone this version of the repo with submodules: `git clone --recurse-submodules --branch xnvme_vX.Y.Z https://github.com/SamsungDS/MacVFN.git`
+4. In MacVFN, run `make build install kill log`, approve system extension and type sudo-password as needed
 5. Clone xNVMe with the `next` branch: `git clone -b next https://github.com/xnvme/xnvme`
-6. Run `make config build install`
+6. In xNVMe, run `make config build install`
 7. Check your NVMe device enumerates `xnvme enum`
 8. Then take the 'uri' and run a command: `xnvme idfy MacVFN-1234ABCD --cns 0 --be=driverkit`
 9. Or two `xnvme_single_sync MacVFN-1234ABCD`
 10. Or three `xnvme_single_async MacVFN-1234ABCD`
+
+MacVFN also registers as a block storage device. Verify that the drive appears in Disk Utility. You can use the NVMe device just like with the native NVMe driver, while retaining the ability to send custom commands. Just be careful, as sending custom writes to the drive will easily corrupt the filesystem, if not done properly.
 
 Optionally, you can clone and build [fio](https://github.com/axboe/fio) with xNVMe support:
 
